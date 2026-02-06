@@ -49,3 +49,4 @@ app.*.map.json
 
 # Environment config files
 assets/env/
+**.g.dart
