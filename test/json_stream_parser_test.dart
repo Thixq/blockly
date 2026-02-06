@@ -109,8 +109,7 @@ void main() {
       'should parse BIG JSON without errors (Stress & Benchmark Test)',
       () async {
         // Manually create a massive JSON String with 300000 items.
-        final buffer = StringBuffer();
-        buffer.write('[');
+        final buffer = StringBuffer()..write('[');
         for (var i = 0; i < 300000; i++) {
           buffer.write('''
           {
