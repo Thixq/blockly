@@ -2,9 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:blockly/core/logging/custom_logger.dart';
+
 /// A parser that runs in a separate isolate and streams parsed objects in chunks.
 /// This prevents UI jank when processing large lists of data.
 class JsonStreamParser {
+  final _logger = CustomLogger('JsonStreamParser');
+
   /// Spawns an isolate to parse the [jsonString] into a list of [T].
   ///
   /// [mapper] must be a static or top-level function that converts a Map to T.
@@ -14,6 +18,7 @@ class JsonStreamParser {
     T Function(Map<String, dynamic> source) mapper, {
     int chunkSize = 100,
   }) {
+    _logger.info('Starting parsing. ChunkSize: $chunkSize');
     final controller = StreamController<List<T>>();
     final receivePort = ReceivePort();
 
@@ -27,6 +32,7 @@ class JsonStreamParser {
         mapper,
       ),
     ).then((isolate) {
+      _logger.debug('Isolate spawned.');
       // Listen for messages from the isolate
       receivePort.listen(
         (dynamic message) {
@@ -35,8 +41,14 @@ class JsonStreamParser {
             try {
               // Cast the incoming list to List<T>
               final typedChunk = message.cast<T>();
+              _logger.debug('Received chunk of ${typedChunk.length} items');
               controller.add(typedChunk);
             } catch (e, s) {
+              _logger.error(
+                'Data type mismatch in isolate response',
+                error: e,
+                stackTrace: s,
+              );
               controller.addError(
                 Exception('Data type mismatch in isolate response'),
                 s,
@@ -44,18 +56,25 @@ class JsonStreamParser {
             }
           } else if (message is _IsolateError) {
             // Received an error
+            _logger.error(
+              'Error from isolate',
+              error: message.error,
+              stackTrace: message.stackTrace,
+            );
             controller.addError(message.error, message.stackTrace);
             receivePort.close();
             isolate.kill();
             controller.close();
           } else if (message == null) {
             // Completion signal
+            _logger.info('Parsing completed successfully.');
             receivePort.close();
             isolate.kill();
             controller.close();
           }
         },
         onError: (Object error, StackTrace stack) {
+          _logger.error('Stream error', error: error, stackTrace: stack);
           controller.addError(error, stack);
           receivePort.close();
           isolate.kill();
