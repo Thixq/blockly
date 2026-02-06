@@ -1,4 +1,4 @@
-import 'package:blockly/core/logging/error_handler.dart';
+import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/services/json_parser/json_stream_parser.dart';
 import 'package:dio/dio.dart';
 
@@ -8,7 +8,7 @@ class DioNetwork {
   DioNetwork({required Dio dioInstance}) : _dio = dioInstance;
 
   final Dio _dio;
-  final _errorHandler = ErrorHandler('DioNetwork');
+  final _logger = CustomLogger('DioNetwork');
 
   /// Base Options Config Get
   BaseOptions get baseOptions => _dio.options;
@@ -19,25 +19,33 @@ class DioNetwork {
   /// Generic Request Method
   Future<T?> request<T>({
     required String url,
-    required T? Function(Map<String, dynamic>? json) fromJson,
+    required T Function(Map<String, dynamic> json) fromJson,
     Map<String, dynamic>? queryParameters,
     Object? data,
     String requestType = 'GET',
     Map<String, dynamic>? headers,
   }) async {
-    return _errorHandler.executeSafely<T?>(
-      () async {
-        final response = await _dio.request<Map<String, dynamic>?>(
-          url,
-          data: data,
-          queryParameters: queryParameters,
-          options: Options(method: requestType, headers: headers),
-        );
+    try {
+      final response = await _dio.request<Map<String, dynamic>?>(
+        url,
+        data: data,
+        queryParameters: queryParameters,
+        options: Options(
+          method: requestType,
+          headers: headers,
+        ),
+      );
 
-        return fromJson(response.data);
-      },
-      errorMessage: 'Request execution failed for url: $url',
-    );
+      final responseData = response.data;
+      if (responseData == null) {
+        return null;
+      }
+
+      return fromJson(responseData);
+    } catch (e, s) {
+      _logger.error('Request failed for url: $url', error: e, stackTrace: s);
+      rethrow;
+    }
   }
 
   /// Generic Streaming Request Method
@@ -85,6 +93,11 @@ class DioNetwork {
         chunkSize: chunkSize,
       );
     } catch (e, s) {
+      _logger.error(
+        'Streaming request failed for url: $url',
+        error: e,
+        stackTrace: s,
+      );
       // Manually log error since we are in a stream generator
       yield* Stream.error(e, s);
     }
