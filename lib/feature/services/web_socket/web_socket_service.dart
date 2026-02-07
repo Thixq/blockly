@@ -64,10 +64,6 @@ class WebSocketService<T> {
 
   Timer? _heartbeatTimer;
 
-  static const Duration _heartbeatInterval = Duration(
-    seconds: 30,
-  );
-
   final StreamController<SocketStatus> _statusController =
       StreamController<SocketStatus>.broadcast();
 
@@ -141,14 +137,6 @@ class WebSocketService<T> {
     _logger.info('Connection established successfully');
     _updateStatus(SocketStatus.connected);
     _retryCount = 0;
-    _startHeartbeat();
-  }
-
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (timer) {
-      send(jsonEncode({'type': 'ping'}));
-    });
   }
 
   Future<void> _onMessageReceived(dynamic message) async {
@@ -175,8 +163,19 @@ class WebSocketService<T> {
       }
 
       if (_parser != null) {
-        final data = _parser!(jsonMap as Map<String, dynamic>);
-        _messageController.add(data);
+        if (jsonMap is List) {
+          // Gelen veri bir liste ise (örn: !miniTicker@arr), her elemanı tek tek işle
+          for (final item in jsonMap) {
+            if (item is Map) {
+              final data = _parser!(Map<String, dynamic>.from(item));
+              _messageController.add(data);
+            }
+          }
+        } else if (jsonMap is Map) {
+          // Gelen veri tekil obje ise
+          final data = _parser!(Map<String, dynamic>.from(jsonMap));
+          _messageController.add(data);
+        }
       }
     } catch (e, s) {
       if (_messageController.isClosed) return;
