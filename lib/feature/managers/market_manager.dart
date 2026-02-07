@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+// ignore_for_file: document_ignores
 
 import 'dart:async';
 
@@ -25,38 +25,24 @@ class MarketManager {
   final WebSocketService<MiniTicker> _socketService;
   final CustomLogger _logger = CustomLogger('MarketManager');
 
-  /// Main data source (Snapshot)
-  /// Key: Symbol (e.g. BTCUSDT), Value: CoinTicker object
   final Map<String, CoinTicker> _tickerMap = {};
 
-  /// Buffer for incoming high-frequency updates
   final Map<String, MiniTicker> _pendingUpdates = {};
 
-  /// Throttle timer
   Timer? _throttleTimer;
   static const Duration _throttleDuration = Duration(milliseconds: 500);
 
-  /// Stream controller for UI consumption
   final StreamController<MarketState> _marketStreamController =
       StreamController<MarketState>.broadcast();
 
   /// Public stream of the unified Coin list
   Stream<MarketState> get marketStream => _marketStreamController.stream;
 
-  /// Initializes the manager:
-  /// 1. Fetches initial snapshot via REST
-  /// 2. Sets up WebSocket connection
-  /// 3. Starts throttling timer
+  /// Initializes the manager by fetching the initial snapshot and setting up the WebSocket connection.
   Future<void> init() async {
     _logger.info('Initializing MarketManager...');
-
-    // 1. Fetch Snapshot
     await _fetchInitialSnapshot();
-
-    // 2. Setup Socket
     _setupWebSocket();
-
-    // 3. Start Throttle Timer
     _startThrottleTimer();
   }
 
@@ -64,11 +50,10 @@ class MarketManager {
     try {
       _logger.info('Fetching snapshot from ${UrlConst.ticker24hr}');
 
-      // Using requestStreaming to handle large list efficiently
       final stream = _dioService.requestStreaming<CoinTicker>(
         url: UrlConst.ticker24hr,
         fromJson: CoinTicker.fromJson,
-        chunkSize: 500, // Large chunks for initial load
+        chunkSize: 500,
       );
 
       await for (final chunk in stream) {
@@ -77,15 +62,13 @@ class MarketManager {
             _tickerMap[ticker.symbol!] = ticker;
           }
         }
-        // Emit partial updates during load if desired,
-        // or wait until end. Here we emit per chunk to show progress.
         _emitState();
       }
 
       _logger.info('Snapshot loaded. Total coins: ${_tickerMap.length}');
     } catch (e, s) {
       _logger.error('Failed to fetch snapshot', error: e, stackTrace: s);
-      // Depending on requirements, we might want to rethrow or retry
+      rethrow;
     }
   }
 
@@ -105,8 +88,6 @@ class MarketManager {
       },
     );
 
-    // Connect
-    // Note: unawaited allows init() to complete without waiting for connection
     unawaited(
       _socketService.connect(Env.binancePriceSocketUrl + UrlConst.miniTicker),
     );
@@ -122,7 +103,6 @@ class MarketManager {
   void _processPendingUpdates() {
     if (_pendingUpdates.isEmpty) return;
 
-    // Apply batched updates to the main state
     final changedSymbols = <String>{};
 
     for (final entry in _pendingUpdates.entries) {
@@ -131,7 +111,6 @@ class MarketManager {
 
       final currentTicker = _tickerMap[symbol];
       if (currentTicker != null) {
-        // Merge logic inside CoinTicker
         _tickerMap[symbol] = currentTicker.copyWithMiniTicker(miniTicker);
         changedSymbols.add(symbol);
       }
@@ -155,7 +134,7 @@ class MarketManager {
     }
   }
 
-  /// Closes streams and timers
+  /// Disposes resources when the manager is no longer needed.
   void dispose() {
     _throttleTimer?.cancel();
     _socketService.dispose();
