@@ -27,7 +27,8 @@ jobs:
       - name: Create dummy .env file
         run: |
           mkdir -p assets/env
-          echo "BASE_URL=wss://dummy.com" > assets/env/.env
+          echo "BINANCE_TICKER_24H_URL=https://dummy.com" > assets/env/.env
+          echo "BINANCE_PRICE_SOCKET_URL=wss://dummy.com" >> assets/env/.env
 
       # 2. Eksik .g.dart dosyalarını üretiyoruz
       - name: Run code generation
