@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores, use_setters_to_change_properties
 
 import 'dart:async';
 import 'dart:convert';
@@ -37,7 +37,7 @@ class WebSocketService<T> {
   static void resetInstance() {
     for (final instance in _instances.values) {
       // Disconnect tetikle
-      instance.disconnect();
+      unawaited(instance.disconnect());
     }
     _instances.clear();
   }

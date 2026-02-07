@@ -160,9 +160,9 @@ void main() {
     late WebSocketService<dynamic> webSocketService;
 
     setUp(() {
-      webSocketService = WebSocketService<dynamic>();
-      webSocketService.setParser((json) => json);
-      webSocketService.channelFactory = (uri) => mockChannel;
+      webSocketService = WebSocketService<dynamic>()
+        ..setParser((json) => json)
+        ..channelFactory = (uri) => mockChannel;
     });
 
     test('High Volume Message Processing (Stress Test)', () async {
