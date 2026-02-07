@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:blockly/feature/const/url_const.dart';
 import 'package:blockly/feature/managers/market_manager.dart';
+import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
 import 'package:blockly/feature/models/mini_ticker.dart';
 import 'package:blockly/feature/services/network/dio_service.dart';
@@ -88,7 +89,7 @@ void main() {
 
       final expectation = expectLater(
         manager.marketStream,
-        emits(isA<List<CoinTicker>>()),
+        emits(isA<MarketState>()),
       );
 
       await manager.init();
@@ -121,7 +122,7 @@ void main() {
 
       await manager.init();
 
-      final emissions = <List<CoinTicker>>[];
+      final emissions = <MarketState>[];
       final subscription = manager.marketStream.listen(emissions.add);
 
       socketStreamController.add(miniUpdate);
@@ -135,7 +136,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 800));
 
-      final latestList = emissions.last;
+      final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
 
       expect(updatedBtc.lastPrice, '51000.00');
@@ -159,7 +160,7 @@ void main() {
 
       await manager.init();
 
-      final emissions = <List<CoinTicker>>[];
+      final emissions = <MarketState>[];
       final subscription = manager.marketStream.listen(emissions.add);
 
       const btcUpdate = miniUpdate;
@@ -180,7 +181,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 600));
 
-      final latestList = emissions.last;
+      final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
       final updatedEth = latestList.firstWhere((t) => t.symbol == 'ETHUSDT');
 
@@ -205,7 +206,7 @@ void main() {
 
       await manager.init();
 
-      final emissions = <List<CoinTicker>>[];
+      final emissions = <MarketState>[];
       final subscription = manager.marketStream.listen(emissions.add);
 
       const dogeUpdate = MiniTicker(
@@ -225,7 +226,7 @@ void main() {
       // Should NOT have emitted a new state solely for the unknown coin.
       // If emissions occurred (e.g. initial snapshot), ensure DOGE is not present.
       if (emissions.isNotEmpty) {
-        final lastList = emissions.last;
+        final lastList = emissions.last.allTickers;
         expect(lastList.any((t) => t.symbol == 'DOGEUSDT'), false);
       }
 
@@ -249,7 +250,7 @@ void main() {
 
         await manager.init();
 
-        final emissions = <List<CoinTicker>>[];
+        final emissions = <MarketState>[];
         final subscription = manager.marketStream.listen(emissions.add);
 
         //Send 50 updates in a loop (simulating rapid socket burst)
@@ -270,7 +271,7 @@ void main() {
 
         await Future<void>.delayed(const Duration(milliseconds: 600));
 
-        final latestList = emissions.last;
+        final latestList = emissions.last.allTickers;
         final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
 
         expect(updatedBtc.lastPrice, '50049');
