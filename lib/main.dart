@@ -16,7 +16,9 @@ void main() async {
   });
 }
 
+/// [MyApp] is the root widget of the application. It sets up the Provider for HomeViewModel and initializes the HomeView.
 class MyApp extends StatelessWidget {
+  /// Constructor with optional key parameter
   const MyApp({super.key});
 
   @override
@@ -28,8 +30,17 @@ class MyApp extends StatelessWidget {
               HomeViewModel(DependencyInstances.manager.marketManager),
         ),
       ],
-      child: const MaterialApp(
-        home: HomeView(),
+      child: MaterialApp(
+        theme: ThemeData.from(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        ),
+        darkTheme: ThemeData.from(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
+            brightness: Brightness.dark,
+          ),
+        ),
+        home: const HomeView(),
       ),
     );
   }
