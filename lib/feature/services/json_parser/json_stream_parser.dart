@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
@@ -23,65 +25,67 @@ class JsonStreamParser {
     final receivePort = ReceivePort();
 
     // Spawn the isolate
-    Isolate.spawn<_IsolateInput<T>>(
-      _isolateEntry,
-      _IsolateInput<T>(
-        jsonString,
-        receivePort.sendPort,
-        chunkSize,
-        mapper,
-      ),
-    ).then((isolate) {
-      _logger.debug('Isolate spawned.');
-      // Listen for messages from the isolate
-      receivePort.listen(
-        (dynamic message) {
-          if (message is List) {
-            // Received a chunk of data
-            try {
-              // Cast the incoming list to List<T>
-              final typedChunk = message.cast<T>();
-              _logger.debug('Received chunk of ${typedChunk.length} items');
-              controller.add(typedChunk);
-            } catch (e, s) {
+    unawaited(
+      Isolate.spawn<_IsolateInput<T>>(
+        _isolateEntry,
+        _IsolateInput<T>(
+          jsonString,
+          receivePort.sendPort,
+          chunkSize,
+          mapper,
+        ),
+      ).then((isolate) {
+        _logger.debug('Isolate spawned.');
+        // Listen for messages from the isolate
+        receivePort.listen(
+          (dynamic message) {
+            if (message is List) {
+              // Received a chunk of data
+              try {
+                // Cast the incoming list to List<T>
+                final typedChunk = message.cast<T>();
+                _logger.debug('Received chunk of ${typedChunk.length} items');
+                controller.add(typedChunk);
+              } catch (e, s) {
+                _logger.error(
+                  'Data type mismatch in isolate response',
+                  error: e,
+                  stackTrace: s,
+                );
+                controller.addError(
+                  Exception('Data type mismatch in isolate response'),
+                  s,
+                );
+              }
+            } else if (message is _IsolateError) {
+              // Received an error
               _logger.error(
-                'Data type mismatch in isolate response',
-                error: e,
-                stackTrace: s,
+                'Error from isolate',
+                error: message.error,
+                stackTrace: message.stackTrace,
               );
-              controller.addError(
-                Exception('Data type mismatch in isolate response'),
-                s,
-              );
+              controller.addError(message.error, message.stackTrace);
+              receivePort.close();
+              isolate.kill();
+              unawaited(controller.close());
+            } else if (message == null) {
+              // Completion signal
+              _logger.info('Parsing completed successfully.');
+              receivePort.close();
+              isolate.kill();
+              unawaited(controller.close());
             }
-          } else if (message is _IsolateError) {
-            // Received an error
-            _logger.error(
-              'Error from isolate',
-              error: message.error,
-              stackTrace: message.stackTrace,
-            );
-            controller.addError(message.error, message.stackTrace);
+          },
+          onError: (Object error, StackTrace stack) {
+            _logger.error('Stream error', error: error, stackTrace: stack);
+            controller.addError(error, stack);
             receivePort.close();
             isolate.kill();
-            controller.close();
-          } else if (message == null) {
-            // Completion signal
-            _logger.info('Parsing completed successfully.');
-            receivePort.close();
-            isolate.kill();
-            controller.close();
-          }
-        },
-        onError: (Object error, StackTrace stack) {
-          _logger.error('Stream error', error: error, stackTrace: stack);
-          controller.addError(error, stack);
-          receivePort.close();
-          isolate.kill();
-          controller.close();
-        },
-      );
-    });
+            unawaited(controller.close());
+          },
+        );
+      }),
+    );
 
     return controller.stream;
   }
