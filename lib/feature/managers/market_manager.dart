@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/const/url_const.dart';
+import 'package:blockly/feature/env/env.dart';
 import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
 import 'package:blockly/feature/models/mini_ticker.dart';
@@ -106,7 +107,9 @@ class MarketManager {
 
     // Connect
     // Note: unawaited allows init() to complete without waiting for connection
-    unawaited(_socketService.connect(UrlConst.miniTicker));
+    unawaited(
+      _socketService.connect(Env.binancePriceSocketUrl + UrlConst.miniTicker),
+    );
   }
 
   void _startThrottleTimer() {
