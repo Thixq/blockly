@@ -12,8 +12,6 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'web_socket_service_test.mocks.dart';
 
-// Mock için: WebSocketChannel ve WebSocketSink
-// Not: Sink generic olduğu için StreamSink<dynamic> olarak mockluyoruz
 @GenerateMocks([WebSocketChannel, WebSocketSink])
 void main() {
   late MockWebSocketChannel mockChannel;
@@ -21,20 +19,16 @@ void main() {
   late StreamController<dynamic> channelStreamController;
 
   setUp(() {
-    // 0. Global state temizliği (Managed Pool)
     WebSocketService.resetInstance();
 
-    // 1. Mock hazırlıkları
     mockChannel = MockWebSocketChannel();
     mockSink = MockWebSocketSink();
     channelStreamController = StreamController<dynamic>.broadcast();
 
-    // Mock Kanal davranışları
     when(mockChannel.stream).thenAnswer((_) => channelStreamController.stream);
     when(mockChannel.sink).thenReturn(mockSink);
     when(mockChannel.ready).thenAnswer((_) => Future.value());
 
-    // Kapatma davranışı
     when(mockSink.close(any, any)).thenAnswer((_) async {
       return null;
     });
@@ -51,7 +45,7 @@ void main() {
       final s1 = WebSocketService<TestModel>();
       final s2 = WebSocketService<TestModel>();
 
-      expect(s1, equals(s2)); // Referans eşitliği (Aynı obje mi?)
+      expect(s1, equals(s2));
     });
 
     test('Should return different instances for different Types', () {
@@ -62,10 +56,8 @@ void main() {
     });
 
     test('Should clean up pool on dispose', () {
-      final service = WebSocketService<TestModel>()
-        ..dispose(); // dispose() havuzdan silmeli
-
-      final newService = WebSocketService<TestModel>(); // Yeni instance gelmeli
+      final service = WebSocketService<TestModel>()..dispose();
+      final newService = WebSocketService<TestModel>();
       expect(service, isNot(equals(newService)));
     });
   });
@@ -99,7 +91,7 @@ void main() {
 
       const testJson = '{"price": 100, "symbol": "BTC"}';
 
-      // Mesajın UI stream'ine düştüğünü test et
+      // Test that message falls into UI stream
       final messageExpectation = expectLater(
         webSocketService.messages,
         emits(
@@ -109,7 +101,6 @@ void main() {
         ),
       );
 
-      // Mock kanaldan mesaj gönder
       channelStreamController.add(testJson);
 
       await messageExpectation;
@@ -123,15 +114,12 @@ void main() {
         messageReceived = true;
       });
 
-      // Pong mesajı gönder
       channelStreamController.add('{"type": "pong"}');
 
-      // Bekle ve kontrol et (Isolate asenkron olduğu için biraz bekleme payı)
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(messageReceived, isFalse);
 
-      // Normal mesaj gönderip çalıştığını teyit et
       channelStreamController.add('{"type": "data"}');
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(messageReceived, isTrue);
@@ -181,16 +169,13 @@ void main() {
         }
       });
 
-      // 1000 adet mesajı arka arkaya bas
-      // Bu, isolate'in kuyruklama ve işleme performansını test eder.
       for (var i = 0; i < messageCount; i++) {
         channelStreamController.add('{"id": $i, "data": "stress_test"}');
       }
 
-      // Bitmesini bekle (Timeout koyarak sonsuz döngüyü engelle)
       await completer.future.timeout(
         const Duration(seconds: 10),
-      ); // Isolate olduğu için biraz süre tanıyoruz
+      );
       stopwatch.stop();
 
       await sub.cancel();
@@ -208,10 +193,8 @@ void main() {
 
       var crashed = false;
 
-      // Hatalı JSON gönder
       channelStreamController
-        ..add('{bad_json: true') // Tırnak yok
-        // Hemen ardından düzgün JSON gönder
+        ..add('{bad_json: true')
         ..add('{"good_json": true}');
 
       final messageExpectation = expectLater(
@@ -224,21 +207,15 @@ void main() {
       } catch (e) {
         crashed = true;
       }
-
-      // Hata olsa bile servis çalışmaya devam etmeli ve sıradaki doğru mesajı işlemeli
       expect(crashed, isFalse);
     });
   });
 
   group('Generics Support', () {
     test('Should parse into Type T', () async {
-      // Setup typed service
       final typedService = WebSocketService<TestModel>()
         ..setParser(TestModel.fromJson)
         ..channelFactory = (uri) => mockChannel;
-
-      // Re-configure connection stubs manually just in case
-      // Note: mockChannel is shared but StreamController is broadcast, so it's fine.
 
       await typedService.connect('wss://typed.com');
 
