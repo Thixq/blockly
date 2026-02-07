@@ -1,0 +1,32 @@
+name: Services Test
+
+on:
+  push:
+    branches: [ "main", "master", "dev/*" ]
+  pull_request:
+    branches: [ "main", "master", "dev/*" ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.35.5' 
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Kod kalitesi kontrolü (Opsiyonel ama önerilir)
+      - name: Analyze code
+        run: dart analyze
+
+      # Testlerin çalıştırılması
+      - name: Run tests
+        run: flutter test
