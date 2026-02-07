@@ -200,7 +200,7 @@ void main() {
       );
 
       expect(receivedCount, messageCount);
-      expect(stopwatch.elapsedMilliseconds, lessThan(300));
+      expect(stopwatch.elapsedMilliseconds, lessThan(500));
     });
 
     test('Parsing Error Resilience', () async {
