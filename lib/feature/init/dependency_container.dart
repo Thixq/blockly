@@ -22,7 +22,7 @@ final class DependencyContainer {
   }
 
   /// Helper to read dependencies easily
-  static T read<T extends Object>() => instance.get<T>();
+  static T read<T extends Object>() => _getIt<T>();
 
   void _configureService() {
     _getIt
@@ -45,7 +45,4 @@ final class DependencyContainer {
       ),
     );
   }
-
-  /// Generic method to retrieve any registered dependency.
-  T get<T extends Object>() => _getIt.get<T>();
 }
