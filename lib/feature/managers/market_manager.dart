@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/const/url_const.dart';
+import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
 import 'package:blockly/feature/models/mini_ticker.dart';
 import 'package:blockly/feature/services/network/dio_service.dart';
@@ -35,11 +36,11 @@ class MarketManager {
   static const Duration _throttleDuration = Duration(milliseconds: 500);
 
   /// Stream controller for UI consumption
-  final StreamController<List<CoinTicker>> _marketStreamController =
-      StreamController<List<CoinTicker>>.broadcast();
+  final StreamController<MarketState> _marketStreamController =
+      StreamController<MarketState>.broadcast();
 
   /// Public stream of the unified Coin list
-  Stream<List<CoinTicker>> get marketStream => _marketStreamController.stream;
+  Stream<MarketState> get marketStream => _marketStreamController.stream;
 
   /// Initializes the manager:
   /// 1. Fetches initial snapshot via REST
@@ -119,7 +120,8 @@ class MarketManager {
     if (_pendingUpdates.isEmpty) return;
 
     // Apply batched updates to the main state
-    var updateCount = 0;
+    final changedSymbols = <String>{};
+
     for (final entry in _pendingUpdates.entries) {
       final symbol = entry.key;
       final miniTicker = entry.value;
@@ -128,20 +130,25 @@ class MarketManager {
       if (currentTicker != null) {
         // Merge logic inside CoinTicker
         _tickerMap[symbol] = currentTicker.copyWithMiniTicker(miniTicker);
-        updateCount++;
+        changedSymbols.add(symbol);
       }
     }
 
     _pendingUpdates.clear();
 
-    if (updateCount > 0) {
-      _emitState();
+    if (changedSymbols.isNotEmpty) {
+      _emitState(changedTickers: changedSymbols);
     }
   }
 
-  void _emitState() {
+  void _emitState({Set<String> changedTickers = const {}}) {
     if (!_marketStreamController.isClosed) {
-      _marketStreamController.add(_tickerMap.values.toList());
+      _marketStreamController.add(
+        MarketState(
+          allTickers: _tickerMap.values.toList(),
+          changedTickers: changedTickers,
+        ),
+      );
     }
   }
 
