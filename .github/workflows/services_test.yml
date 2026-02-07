@@ -1,0 +1,43 @@
+name: Services Test
+
+on:
+  push:
+    branches: [ "main", "master", "dev/*" ]
+  pull_request:
+    branches: [ "main", "master", "dev/*" ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.35.5' 
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 1. build_runner'ın kızmaması için sahte .env dosyası oluşturuyoruz
+      - name: Create dummy .env file
+        run: |
+          mkdir -p assets/env
+          echo "BINANCE_TICKER_24H_URL=https://dummy.com" > assets/env/.env
+          echo "BINANCE_PRICE_SOCKET_URL=wss://dummy.com" >> assets/env/.env
+
+      # 2. Eksik .g.dart dosyalarını üretiyoruz
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # Kod kalitesi kontrolü (Opsiyonel ama önerilir)
+      - name: Analyze code
+        run: dart analyze
+
+      # Testlerin çalıştırılması
+      - name: Run tests
+        run: flutter test
