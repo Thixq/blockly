@@ -4,7 +4,7 @@ import 'package:json_annotation/json_annotation.dart';
 part 'mini_ticker.g.dart';
 
 /// MiniTicker is a data model representing a simplified ticker information from a financial API.
-@JsonSerializable(createToJson: false)
+@JsonSerializable(createToJson: false, checked: true)
 class MiniTicker extends Equatable {
   /// Constructs a MiniTicker with all required fields.
   const MiniTicker({
@@ -18,6 +18,7 @@ class MiniTicker extends Equatable {
     required this.q,
   });
 
+  /// Factory constructor for creating a MiniTicker instance from a JSON map.
   factory MiniTicker.fromJson(Map<String, dynamic> json) =>
       _$MiniTickerFromJson(json);
 
