@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:blockly/feature/const/url_const.dart';
+import 'package:blockly/feature/env/env.dart';
 import 'package:blockly/feature/managers/market_manager.dart';
 import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
@@ -104,7 +105,11 @@ void main() {
         ),
       ).called(1);
 
-      verify(mockSocketService.connect(UrlConst.miniTicker)).called(1);
+      verify(
+        mockSocketService.connect(
+          Env.binancePriceSocketUrl + UrlConst.miniTicker,
+        ),
+      ).called(1);
     });
 
     test('Should buffer and throttle socket updates', () async {
