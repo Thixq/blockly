@@ -33,7 +33,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Map<String, CoinTicker> _tickerMap = {};
 
-  String _searchText = 'try';
+  String _searchText = 'TRY';
   HomeViewState _state = HomeViewState.loading;
   String? _errorMessage;
 
@@ -48,7 +48,7 @@ class HomeViewModel extends ChangeNotifier {
 
   /// Updates the search text and filters the displayed list accordingly.
   void updateSearchText(String text) {
-    _searchText = text.toLowerCase();
+    _searchText = text.toUpperCase();
     _applyFilter();
     notifyListeners();
   }
@@ -59,7 +59,7 @@ class HomeViewModel extends ChangeNotifier {
     } else {
       _displayList = _allTickers
           .where(
-            (t) => t.symbol?.toLowerCase().contains(_searchText) ?? false,
+            (t) => t.symbol?.toUpperCase().contains(_searchText) ?? false,
           )
           .toList();
     }
