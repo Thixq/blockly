@@ -1,4 +1,4 @@
-// ignore_for_file: document_ignores
+// ignore_for_file: document_ignores, avoid_catches_without_on_clauses
 
 import 'dart:async';
 
@@ -37,6 +37,25 @@ class MarketManager {
 
   /// Public stream of the unified Coin list
   Stream<MarketState> get marketStream => _marketStreamController.stream;
+
+  /// Returns the current cached ticker for a given symbol, or null if not found.
+  CoinTicker? getTicker(String symbol) => _tickerMap[symbol];
+
+  /// Returns a stream for a specific coin's updates derived from the main market stream.
+  Stream<CoinTicker> getCoinStream(String symbol) {
+    return marketStream
+        .map((state) {
+          try {
+            return state.allTickers.firstWhere((t) => t.symbol == symbol);
+          } catch (e) {
+            // Coin not found in current state
+            return null;
+          }
+        })
+        .where((t) => t != null)
+        .cast<CoinTicker>()
+        .distinct();
+  }
 
   /// Initializes the manager by fetching the initial snapshot and setting up the WebSocket connection.
   Future<void> init() async {
