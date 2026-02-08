@@ -37,8 +37,6 @@ class WebSocketService<T> {
   final int _maxRetryDelaySeconds = 60;
   Timer? _reconnectTimer;
 
-  Timer? _heartbeatTimer;
-
   final StreamController<SocketStatus> _statusController =
       StreamController<SocketStatus>.broadcast();
 
@@ -206,7 +204,6 @@ class WebSocketService<T> {
   }
 
   void _handleDisconnect() {
-    _heartbeatTimer?.cancel();
     _updateStatus(SocketStatus.disconnected);
     _scheduleReconnect();
   }
@@ -236,7 +233,6 @@ class WebSocketService<T> {
   /// Manually closes the connection.
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
-    _heartbeatTimer?.cancel();
 
     await _subscription?.cancel();
     if (_channel != null) {
@@ -252,7 +248,7 @@ class WebSocketService<T> {
     unawaited(disconnect());
 
     // Clean up isolate
-    _isolateSubscription?.cancel();
+    unawaited(_isolateSubscription?.cancel());
     _isolateParser?.dispose();
     _isolateParser = null;
 
