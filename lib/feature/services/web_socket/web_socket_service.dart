@@ -3,19 +3,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'dart:isolate'; // Isolate için gerekli
-
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/enums/socket_status_enum.dart';
+import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
 import 'package:meta/meta.dart'; // For @visibleForTesting
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Channel creator function type (For testability)
 typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
-
-/// Function type for parsing incoming data into a model
-typedef Parser<T> = T Function(Map<String, dynamic> json);
 
 /// WebSocketService is a generic service class designed to manage WebSocket connections.
 /// [T] represents the data model that will be received over the socket.
@@ -41,8 +37,6 @@ class WebSocketService<T> {
   final int _maxRetryDelaySeconds = 60;
   Timer? _reconnectTimer;
 
-  Timer? _heartbeatTimer;
-
   final StreamController<SocketStatus> _statusController =
       StreamController<SocketStatus>.broadcast();
 
@@ -57,9 +51,15 @@ class WebSocketService<T> {
 
   StreamSubscription<dynamic>? _subscription;
 
+  // Background Isolate Parser
+  WebSocketIsolateParser<T>? _isolateParser;
+  bool _useIsolate = false;
+  StreamSubscription<dynamic>? _isolateSubscription;
+
   /// Connects to the WebSocket server. Manages connection status and processes messages.
-  Future<void> connect(String url) async {
+  Future<void> connect(String url, {bool useIsolate = false}) async {
     _lastUrl = url;
+    _useIsolate = useIsolate;
 
     if (_parser == null) {
       _logger.error('Parser not set! Call setParser() before connecting.');
@@ -72,6 +72,33 @@ class WebSocketService<T> {
         _status == SocketStatus.connecting) {
       _logger.warning('Already connected or connecting to $url');
       return;
+    }
+
+    // Initialize isolate if requested
+    if (_useIsolate && _isolateParser == null) {
+      try {
+        _isolateParser = WebSocketIsolateParser<T>(_parser!);
+        await _isolateParser!.spawn();
+
+        // Listen to objects coming from the isolate
+        _isolateSubscription = _isolateParser!.output.listen((data) {
+          if (data is List) {
+            for (final item in data) {
+              _messageController.add(item as T);
+            }
+          } else if (data is T) {
+            _messageController.add(data);
+          }
+        });
+      } catch (e) {
+        _logger.error(
+          'Failed to spawn isolate, falling back to main thread.',
+          error: e,
+        );
+        _useIsolate = false;
+        _isolateParser?.dispose();
+        _isolateParser = null;
+      }
     }
 
     _updateStatus(SocketStatus.connecting);
@@ -130,10 +157,15 @@ class WebSocketService<T> {
       } else {
         return;
       }
-      final jsonMap = await Isolate.run(() {
-        final decoded = jsonDecode(payload);
-        return decoded;
-      });
+
+      // 1. ISOLATE PATH
+      if (_useIsolate && _isolateParser != null) {
+        _isolateParser!.parse(payload);
+        return;
+      }
+
+      // 2. MAIN THREAD PATH (Fallback)
+      final jsonMap = jsonDecode(payload);
 
       if (_messageController.isClosed) return;
 
@@ -143,7 +175,7 @@ class WebSocketService<T> {
 
       if (_parser != null) {
         if (jsonMap is List) {
-          // Gelen veri bir liste ise (örn: !miniTicker@arr), her elemanı tek tek işle
+          // Gelen veri bir liste ise (örn: !miniTicker@arr)
           for (final item in jsonMap) {
             if (item is Map) {
               final data = _parser!(Map<String, dynamic>.from(item));
@@ -172,7 +204,6 @@ class WebSocketService<T> {
   }
 
   void _handleDisconnect() {
-    _heartbeatTimer?.cancel();
     _updateStatus(SocketStatus.disconnected);
     _scheduleReconnect();
   }
@@ -187,7 +218,8 @@ class WebSocketService<T> {
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(seconds: delay), () {
       if (_lastUrl != null) {
-        unawaited(connect(_lastUrl!));
+        // Keep the isolate preference on reconnect
+        unawaited(connect(_lastUrl!, useIsolate: _useIsolate));
       }
     });
   }
@@ -201,7 +233,6 @@ class WebSocketService<T> {
   /// Manually closes the connection.
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
-    _heartbeatTimer?.cancel();
 
     await _subscription?.cancel();
     if (_channel != null) {
@@ -215,6 +246,12 @@ class WebSocketService<T> {
   /// Completely closes the service and cleans up resources (Streams are closed).
   void dispose() {
     unawaited(disconnect());
+
+    // Clean up isolate
+    unawaited(_isolateSubscription?.cancel());
+    _isolateParser?.dispose();
+    _isolateParser = null;
+
     unawaited(_statusController.close());
     unawaited(_messageController.close());
   }
