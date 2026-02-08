@@ -18,7 +18,7 @@ class SmartCoinRow extends StatefulWidget {
 
 class _SmartCoinRowState extends State<SmartCoinRow> {
   double? _prevPrice;
-  Color _cachedTextColor = Colors.grey;
+  Color _cachedTextColor = Colors.blue;
   Color _cachedContainerColor = Colors.transparent;
 
   @override

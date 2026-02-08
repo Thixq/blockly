@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
+
 import 'dart:async';
 
 import 'package:blockly/feature/managers/market_manager.dart';
@@ -5,11 +7,23 @@ import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
 import 'package:flutter/foundation.dart';
 
+/// App States for Home View
+enum HomeViewState {
+  /// Loading state
+  loading,
+
+  /// Loaded state
+  loaded,
+
+  /// Error state
+  error,
+}
+
 /// [HomeViewModel] listens to the MarketManager's stream and manages the state for the HomeView.
 class HomeViewModel extends ChangeNotifier {
   /// Constructor with dependency injection
   HomeViewModel(this._manager) {
-    _init();
+    unawaited(_init());
   }
   final MarketManager _manager;
   StreamSubscription<MarketState>? _subscription;
@@ -19,7 +33,18 @@ class HomeViewModel extends ChangeNotifier {
 
   Map<String, CoinTicker> _tickerMap = {};
 
-  String _searchText = '';
+  String _searchText = 'try';
+  HomeViewState _state = HomeViewState.loading;
+  String? _errorMessage;
+
+  /// Returns the current state of the view
+  HomeViewState get state => _state;
+
+  /// Returns the error message if state is [HomeViewState.error]
+  String? get errorMessage => _errorMessage;
+
+  /// Returns the current search text
+  String get searchText => _searchText;
 
   /// Updates the search text and filters the displayed list accordingly.
   void updateSearchText(String text) {
@@ -40,16 +65,37 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  void _init() {
+  Future<void> _init() async {
+    _state = HomeViewState.loading;
+    _errorMessage = null;
+    notifyListeners();
+
+    await _subscription?.cancel();
     _subscription = _manager.marketStream.listen((state) {
       _tickerMap = {for (final t in state.allTickers) t.symbol!: t};
       _allTickers = state.allTickers;
+
+      if (_state == HomeViewState.loading) {
+        _state = HomeViewState.loaded;
+      }
 
       _applyFilter();
 
       notifyListeners();
     });
-    unawaited(_manager.init());
+
+    try {
+      await _manager.init();
+    } catch (e) {
+      _state = HomeViewState.error;
+      _errorMessage = 'An unexpected error occurred. Please try again.';
+      notifyListeners();
+    }
+  }
+
+  /// Retries the initialization process
+  Future<void> retry() async {
+    await _init();
   }
 
   /// Retrieves the CoinTicker for a specific symbol. Returns null if not found.
