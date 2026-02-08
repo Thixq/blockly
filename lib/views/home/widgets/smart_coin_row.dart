@@ -42,7 +42,7 @@ class _SmartCoinRowState extends State<SmartCoinRow> {
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    unawaited(_subscription?.cancel());
     super.dispose();
   }
 

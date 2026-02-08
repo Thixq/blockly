@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:blockly/feature/enums/socket_status_enum.dart';
 import 'package:blockly/feature/managers/market_manager.dart';
 import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
@@ -14,6 +15,9 @@ enum HomeViewState {
 
   /// Loaded state
   loaded,
+
+  /// Disconnected state (socket connection lost)
+  disconnected,
 
   /// Error state
   error,
@@ -31,6 +35,7 @@ class HomeViewModel extends ChangeNotifier {
   MarketManager get marketManager => _manager;
 
   StreamSubscription<MarketState>? _subscription;
+  StreamSubscription<SocketStatus>? _socketStatusSubscription;
 
   List<CoinTicker> _displayList = [];
   List<CoinTicker> _allTickers = [];
@@ -73,6 +78,23 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     await _subscription?.cancel();
+    await _socketStatusSubscription?.cancel();
+
+    // Listen to socket disconnections
+    _socketStatusSubscription = _manager.socketStatusStream.listen((status) {
+      if (status == SocketStatus.disconnected &&
+          _state == HomeViewState.loaded) {
+        _state = HomeViewState.disconnected;
+        _errorMessage = 'Connection lost. Please check your internet.';
+        notifyListeners();
+      } else if (status == SocketStatus.connected &&
+          _state == HomeViewState.disconnected) {
+        _state = HomeViewState.loaded;
+        _errorMessage = null;
+        notifyListeners();
+      }
+    });
+
     _subscription = _manager.marketStream.listen((state) {
       final isSnapshotEmission = state.changedTickers.isEmpty;
 
@@ -102,9 +124,16 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  /// Retries the initialization process
+  /// Retries the initialization or reconnection process.
   Future<void> retry() async {
-    await _init();
+    if (_state == HomeViewState.disconnected) {
+      _state = HomeViewState.loaded;
+      _errorMessage = null;
+      notifyListeners();
+      await _manager.reconnect();
+    } else {
+      await _init();
+    }
   }
 
   /// Retrieves the CoinTicker for a specific symbol. Returns null if not found.
@@ -119,6 +148,7 @@ class HomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     unawaited(_subscription?.cancel());
+    unawaited(_socketStatusSubscription?.cancel());
     super.dispose();
   }
 }

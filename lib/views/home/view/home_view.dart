@@ -40,20 +40,26 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onStateChanged() {
+    print('Home view state: ${_viewModel.state}');
     if (!mounted) return;
-    if (_viewModel.state == HomeViewState.error) {
+    if (_viewModel.state == HomeViewState.error ||
+        _viewModel.state == HomeViewState.disconnected) {
       unawaited(
         showAdaptiveDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog.adaptive(
-            title: const Text('Hata'),
+            title: Text(
+              _viewModel.state == HomeViewState.disconnected
+                  ? 'Connection Lost'
+                  : 'Error',
+            ),
             content: Text(
               _viewModel.errorMessage ??
                   'An unexpected error occurred. Please try again.',
             ),
             actions: [
-              CupertinoButton(
+              TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                   unawaited(_viewModel.retry());
@@ -120,6 +126,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
               );
             case HomeViewState.loaded:
+            case HomeViewState.disconnected:
               return Selector<HomeViewModel, List<CoinTicker>>(
                 selector: (_, vm) => vm.tickerList,
                 shouldRebuild: (previous, next) =>

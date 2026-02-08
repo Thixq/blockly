@@ -51,7 +51,10 @@ final class DependencyContainer {
         // WebSocketService içindeki factory sayesinde eğer MiniTicker
         // havuzda varsa o gelecek, yoksa yeni oluşacak.
         socketService: readOrCreate<WebSocketService<MiniTicker>>(
-          WebSocketService<MiniTicker>.new,
+          () => WebSocketService<MiniTicker>(
+            parser: MiniTicker.fromJson,
+            manuellyRetry: true,
+          ),
         ),
       ),
     );

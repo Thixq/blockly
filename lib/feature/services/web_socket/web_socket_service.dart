@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_catches_without_on_clauses, document_ignores, use_setters_to_change_properties
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
 
 import 'dart:async';
 import 'dart:convert';
@@ -16,13 +16,13 @@ typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
 /// WebSocketService is a generic service class designed to manage WebSocket connections.
 /// [T] represents the data model that will be received over the socket.
 class WebSocketService<T> {
-  Parser<T>? _parser;
+  /// Constructor
+  WebSocketService({required Parser<T> parser, bool? manuellyRetry})
+    : _parser = parser,
+      _manuellyRetry = manuellyRetry ?? false;
+  final Parser<T> _parser;
 
-  /// Method to set the parser externally.
-  /// Must be called before connecting.
-  void setParser(Parser<T> parser) {
-    _parser = parser;
-  }
+  final bool _manuellyRetry;
 
   /// Mock channel factory for use in tests
   @visibleForTesting
@@ -36,6 +36,10 @@ class WebSocketService<T> {
   int _retryCount = 0;
   final int _maxRetryDelaySeconds = 60;
   Timer? _reconnectTimer;
+
+  // Heartbeat variables
+  Timer? _heartbeatTimer;
+  final Duration _inactivityTimeout = const Duration(seconds: 5);
 
   final StreamController<SocketStatus> _statusController =
       StreamController<SocketStatus>.broadcast();
@@ -61,13 +65,6 @@ class WebSocketService<T> {
     _lastUrl = url;
     _useIsolate = useIsolate;
 
-    if (_parser == null) {
-      _logger.error('Parser not set! Call setParser() before connecting.');
-      throw StateError(
-        'Parser not set. You must call setParser() before connecting.',
-      );
-    }
-
     if (_status == SocketStatus.connected ||
         _status == SocketStatus.connecting) {
       _logger.warning('Already connected or connecting to $url');
@@ -77,7 +74,7 @@ class WebSocketService<T> {
     // Initialize isolate if requested
     if (_useIsolate && _isolateParser == null) {
       try {
-        _isolateParser = WebSocketIsolateParser<T>(_parser!);
+        _isolateParser = WebSocketIsolateParser<T>(_parser);
         await _isolateParser!.spawn();
 
         // Listen to objects coming from the isolate
@@ -111,19 +108,13 @@ class WebSocketService<T> {
         _channel = WebSocketChannel.connect(Uri.parse(url));
       }
 
-      await _channel!.ready
-          .then((_) {
-            _onConnected();
-          })
-          .catchError((Object? e) {
-            _logger.error('Failed to establish connection', error: e);
-            _handleDisconnect();
-          });
+      await _channel!.ready;
+      _onConnected();
 
       await _subscription?.cancel();
       _subscription = _channel!.stream.listen(
         _onMessageReceived,
-        onDone: _handleDisconnect,
+        onDone: disconnect,
         onError: (Object? error) {
           _logger.error('Stream error occurred', error: error);
           _handleDisconnect();
@@ -143,9 +134,11 @@ class WebSocketService<T> {
     _logger.info('Connection established successfully');
     _updateStatus(SocketStatus.connected);
     _retryCount = 0;
+    _startHeartbeat();
   }
 
   Future<void> _onMessageReceived(dynamic message) async {
+    _resetHeartbeat();
     if (_messageController.isClosed) return;
 
     try {
@@ -155,7 +148,9 @@ class WebSocketService<T> {
       } else if (message is List<int>) {
         payload = utf8.decode(message);
       } else {
-        return;
+        throw FormatException(
+          'Unsupported message type: ${message.runtimeType}',
+        );
       }
 
       // 1. ISOLATE PATH
@@ -173,20 +168,18 @@ class WebSocketService<T> {
         return;
       }
 
-      if (_parser != null) {
-        if (jsonMap is List) {
-          // Gelen veri bir liste ise (örn: !miniTicker@arr)
-          for (final item in jsonMap) {
-            if (item is Map) {
-              final data = _parser!(Map<String, dynamic>.from(item));
-              _messageController.add(data);
-            }
+      if (jsonMap is List) {
+        // Gelen veri bir liste ise (örn: !miniTicker@arr)
+        for (final item in jsonMap) {
+          if (item is Map) {
+            final data = _parser(Map<String, dynamic>.from(item));
+            _messageController.add(data);
           }
-        } else if (jsonMap is Map) {
-          // Gelen veri tekil obje ise
-          final data = _parser!(Map<String, dynamic>.from(jsonMap));
-          _messageController.add(data);
         }
+      } else if (jsonMap is Map) {
+        // Gelen veri tekil obje ise
+        final data = _parser(Map<String, dynamic>.from(jsonMap));
+        _messageController.add(data);
       }
     } catch (e, s) {
       if (_messageController.isClosed) return;
@@ -205,7 +198,14 @@ class WebSocketService<T> {
 
   void _handleDisconnect() {
     _updateStatus(SocketStatus.disconnected);
-    _scheduleReconnect();
+    _heartbeatTimer?.cancel();
+    _logger.warning('Socket Disconnected');
+    if (!_manuellyRetry) {
+      _scheduleReconnect();
+    }
+    _logger.info(
+      'Manual retry is enabled, not scheduling automatic reconnect.',
+    );
   }
 
   void _scheduleReconnect() {
@@ -214,11 +214,13 @@ class WebSocketService<T> {
 
     final delay = (_retryCount * _retryCount).clamp(1, _maxRetryDelaySeconds);
 
-    _logger.info('Reconnecting in $delay seconds...');
+    _logger.info(
+      'Connection lost. Reconnecting in $delay seconds... '
+      '(attempt $_retryCount)',
+    );
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(seconds: delay), () {
       if (_lastUrl != null) {
-        // Keep the isolate preference on reconnect
         unawaited(connect(_lastUrl!, useIsolate: _useIsolate));
       }
     });
@@ -226,13 +228,39 @@ class WebSocketService<T> {
 
   void _updateStatus(SocketStatus newStatus) {
     if (_statusController.isClosed) return;
+    if (_status != newStatus) {
+      _logger.info('Socket Status Changed: $_status -> $newStatus');
+    }
     _status = newStatus;
     _statusController.add(_status);
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer(_inactivityTimeout, _onHeartbeatTimeout);
+  }
+
+  void _resetHeartbeat() {
+    if (_heartbeatTimer != null) {
+      _heartbeatTimer!.cancel();
+      _heartbeatTimer = Timer(_inactivityTimeout, _onHeartbeatTimeout);
+    }
+  }
+
+  void _onHeartbeatTimeout() {
+    _logger.warning(
+      'No data received for ${_inactivityTimeout.inSeconds}s. Assuming connection is dead.',
+    );
+    // Move to disconnected state immediately to trigger reconnect logic
+    // We assume the socket is dead, so we don't wait for 'onDone'
+    unawaited(_channel?.sink.close(status.goingAway));
+    _handleDisconnect();
   }
 
   /// Manually closes the connection.
   Future<void> disconnect() async {
     _reconnectTimer?.cancel();
+    _heartbeatTimer?.cancel();
 
     await _subscription?.cancel();
     if (_channel != null) {
@@ -254,5 +282,16 @@ class WebSocketService<T> {
 
     unawaited(_statusController.close());
     unawaited(_messageController.close());
+  }
+
+  /// Allows manual retrying of the connection. If already connected or connecting, it will ignore the request.
+  Future<void> manualRetry() async {
+    if (_status == SocketStatus.connected ||
+        _status == SocketStatus.connecting) {
+      _logger.warning('Already connected or connecting, manual retry ignored.');
+      return;
+    }
+    _logger.info('Manual retry initiated by user.');
+    unawaited(connect(_lastUrl!, useIsolate: _useIsolate));
   }
 }

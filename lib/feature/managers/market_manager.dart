@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/const/url_const.dart';
+import 'package:blockly/feature/enums/socket_status_enum.dart';
 import 'package:blockly/feature/env/env.dart';
 import 'package:blockly/feature/managers/market_state.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
@@ -37,6 +38,9 @@ class MarketManager {
 
   /// Public stream of the unified Coin list
   Stream<MarketState> get marketStream => _marketStreamController.stream;
+
+  /// Exposes the WebSocket connection status stream.
+  Stream<SocketStatus> get socketStatusStream => _socketService.statusStream;
 
   /// Returns the current cached ticker for a given symbol, or null if not found.
   CoinTicker? getTicker(String symbol) => _tickerMap[symbol];
@@ -90,8 +94,6 @@ class MarketManager {
   }
 
   void _setupWebSocket() {
-    _socketService.setParser(MiniTicker.fromJson);
-
     _socketService.messages.listen(
       (miniTicker) {
         if (miniTicker.s != null) {
@@ -158,5 +160,11 @@ class MarketManager {
     _socketService.dispose();
     unawaited(_marketStreamController.close());
     _logger.info('MarketManager disposed');
+  }
+
+  /// Reconnects the WebSocket after a manual disconnect/retry.
+  Future<void> reconnect() async {
+    _logger.info('Manual reconnect requested');
+    unawaited(_socketService.manualRetry());
   }
 }
