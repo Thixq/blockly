@@ -59,8 +59,9 @@ void main() {
     when(
       mockSocketService.messages,
     ).thenAnswer((_) => socketStreamController.stream);
-    when(mockSocketService.connect(any)).thenAnswer((_) async {});
-    when(mockSocketService.setParser(any)).thenReturn(null);
+    when(
+      mockSocketService.connect(any, useIsolate: anyNamed('useIsolate')),
+    ).thenAnswer((_) async {});
     when(mockSocketService.dispose()).thenReturn(null);
 
     manager = MarketManager(
@@ -108,6 +109,7 @@ void main() {
       verify(
         mockSocketService.connect(
           Env.binancePriceSocketUrl + UrlConst.miniTicker,
+          useIsolate: true,
         ),
       ).called(1);
     });
@@ -139,7 +141,7 @@ void main() {
         lessThanOrEqualTo(1),
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
 
       final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
@@ -184,7 +186,7 @@ void main() {
         ..add(btcUpdate)
         ..add(ethUpdate);
 
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
 
       final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
@@ -274,7 +276,7 @@ void main() {
           );
         }
 
-        await Future<void>.delayed(const Duration(milliseconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         final latestList = emissions.last.allTickers;
         final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');

@@ -28,6 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) =>
               HomeViewModel(DependencyInstances.manager.marketManager),
+          lazy: true,
         ),
       ],
       child: MaterialApp(

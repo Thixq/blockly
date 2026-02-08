@@ -1,5 +1,6 @@
 import 'package:blockly/feature/init/dependency_container.dart';
 import 'package:blockly/feature/managers/market_manager.dart';
+import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
 import 'package:blockly/feature/services/network/dio_service.dart';
 import 'package:blockly/feature/services/web_socket/web_socket_service.dart';
 
@@ -29,8 +30,10 @@ final class DependencyServices {
 
   /// Retrieves a WebSocketService instance for the specified type [T] from the DependencyContainer.
   /// This allows for type-safe access to different WebSocketService instances if needed.
-  WebSocketService<T> webSocketService<T>() =>
-      DependencyContainer.read<WebSocketService<T>>();
+  WebSocketService<T> webSocketService<T>({required Parser<T> parser}) =>
+      DependencyContainer.readOrCreate<WebSocketService<T>>(
+        () => WebSocketService<T>(parser: parser),
+      );
 }
 
 /// Example usage:

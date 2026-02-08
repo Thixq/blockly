@@ -137,15 +137,9 @@ class MockTickerWebSocketService extends _i1.Mock
   );
 
   @override
-  void setParser(_i5.Parser<_i6.MiniTicker>? parser) => super.noSuchMethod(
-    Invocation.method(#setParser, [parser]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  _i4.Future<void> connect(String? url) =>
+  _i4.Future<void> connect(String? url, {bool? useIsolate = false}) =>
       (super.noSuchMethod(
-            Invocation.method(#connect, [url]),
+            Invocation.method(#connect, [url], {#useIsolate: useIsolate}),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
@@ -171,4 +165,13 @@ class MockTickerWebSocketService extends _i1.Mock
     Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  _i4.Future<void> manualRetry() =>
+      (super.noSuchMethod(
+            Invocation.method(#manualRetry, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }

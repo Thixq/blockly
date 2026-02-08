@@ -1,12 +1,11 @@
-// ignore_for_file: avoid_catches_without_on_clauses, document_ignores, use_setters_to_change_properties
+// ignore_for_file: avoid_catches_without_on_clauses, document_ignores
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'dart:isolate'; // Isolate için gerekli
-
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/enums/socket_status_enum.dart';
+import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
 import 'package:meta/meta.dart'; // For @visibleForTesting
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -14,40 +13,16 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// Channel creator function type (For testability)
 typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
 
-/// Function type for parsing incoming data into a model
-typedef Parser<T> = T Function(Map<String, dynamic> json);
-
 /// WebSocketService is a generic service class designed to manage WebSocket connections.
 /// [T] represents the data model that will be received over the socket.
 class WebSocketService<T> {
-  /// Factory Constructor: Returns an existing service for type T if available,
-  /// otherwise creates a new one, adds it to the pool, and returns it.
-  factory WebSocketService() {
-    return _instances.putIfAbsent(T, WebSocketService<T>._internal)
-        as WebSocketService<T>;
-  }
+  /// Constructor
+  WebSocketService({required Parser<T> parser, bool? manuellyRetry})
+    : _parser = parser,
+      _manuellyRetry = manuellyRetry ?? false;
+  final Parser<T> _parser;
 
-  WebSocketService._internal();
-
-  static final Map<Type, WebSocketService<dynamic>> _instances = {};
-
-  /// Instance reset method for testing purposes (Used in tests)
-  @visibleForTesting
-  static void resetInstance() {
-    for (final instance in _instances.values) {
-      // Trigger disconnect
-      unawaited(instance.disconnect());
-    }
-    _instances.clear();
-  }
-
-  Parser<T>? _parser;
-
-  /// Method to set the parser externally.
-  /// Must be called before connecting.
-  void setParser(Parser<T> parser) {
-    _parser = parser;
-  }
+  final bool _manuellyRetry;
 
   /// Mock channel factory for use in tests
   @visibleForTesting
@@ -62,7 +37,9 @@ class WebSocketService<T> {
   final int _maxRetryDelaySeconds = 60;
   Timer? _reconnectTimer;
 
+  // Heartbeat variables
   Timer? _heartbeatTimer;
+  final Duration _inactivityTimeout = const Duration(seconds: 5);
 
   final StreamController<SocketStatus> _statusController =
       StreamController<SocketStatus>.broadcast();
@@ -78,21 +55,47 @@ class WebSocketService<T> {
 
   StreamSubscription<dynamic>? _subscription;
 
-  /// Connects to the WebSocket server. Manages connection status and processes messages.
-  Future<void> connect(String url) async {
-    _lastUrl = url;
+  // Background Isolate Parser
+  WebSocketIsolateParser<T>? _isolateParser;
+  bool _useIsolate = false;
+  StreamSubscription<dynamic>? _isolateSubscription;
 
-    if (_parser == null) {
-      _logger.error('Parser not set! Call setParser() before connecting.');
-      throw StateError(
-        'Parser not set. You must call setParser() before connecting.',
-      );
-    }
+  /// Connects to the WebSocket server. Manages connection status and processes messages.
+  Future<void> connect(String url, {bool useIsolate = false}) async {
+    _lastUrl = url;
+    _useIsolate = useIsolate;
 
     if (_status == SocketStatus.connected ||
         _status == SocketStatus.connecting) {
       _logger.warning('Already connected or connecting to $url');
       return;
+    }
+
+    // Initialize isolate if requested
+    if (_useIsolate && _isolateParser == null) {
+      try {
+        _isolateParser = WebSocketIsolateParser<T>(_parser);
+        await _isolateParser!.spawn();
+
+        // Listen to objects coming from the isolate
+        _isolateSubscription = _isolateParser!.output.listen((data) {
+          if (data is List) {
+            for (final item in data) {
+              _messageController.add(item as T);
+            }
+          } else if (data is T) {
+            _messageController.add(data);
+          }
+        });
+      } catch (e) {
+        _logger.error(
+          'Failed to spawn isolate, falling back to main thread.',
+          error: e,
+        );
+        _useIsolate = false;
+        _isolateParser?.dispose();
+        _isolateParser = null;
+      }
     }
 
     _updateStatus(SocketStatus.connecting);
@@ -105,19 +108,13 @@ class WebSocketService<T> {
         _channel = WebSocketChannel.connect(Uri.parse(url));
       }
 
-      await _channel!.ready
-          .then((_) {
-            _onConnected();
-          })
-          .catchError((Object? e) {
-            _logger.error('Failed to establish connection', error: e);
-            _handleDisconnect();
-          });
+      await _channel!.ready;
+      _onConnected();
 
       await _subscription?.cancel();
       _subscription = _channel!.stream.listen(
         _onMessageReceived,
-        onDone: _handleDisconnect,
+        onDone: disconnect,
         onError: (Object? error) {
           _logger.error('Stream error occurred', error: error);
           _handleDisconnect();
@@ -137,9 +134,11 @@ class WebSocketService<T> {
     _logger.info('Connection established successfully');
     _updateStatus(SocketStatus.connected);
     _retryCount = 0;
+    _startHeartbeat();
   }
 
   Future<void> _onMessageReceived(dynamic message) async {
+    _resetHeartbeat();
     if (_messageController.isClosed) return;
 
     try {
@@ -149,12 +148,19 @@ class WebSocketService<T> {
       } else if (message is List<int>) {
         payload = utf8.decode(message);
       } else {
+        throw FormatException(
+          'Unsupported message type: ${message.runtimeType}',
+        );
+      }
+
+      // 1. ISOLATE PATH
+      if (_useIsolate && _isolateParser != null) {
+        _isolateParser!.parse(payload);
         return;
       }
-      final jsonMap = await Isolate.run(() {
-        final decoded = jsonDecode(payload);
-        return decoded;
-      });
+
+      // 2. MAIN THREAD PATH (Fallback)
+      final jsonMap = jsonDecode(payload);
 
       if (_messageController.isClosed) return;
 
@@ -162,20 +168,18 @@ class WebSocketService<T> {
         return;
       }
 
-      if (_parser != null) {
-        if (jsonMap is List) {
-          // Gelen veri bir liste ise (örn: !miniTicker@arr), her elemanı tek tek işle
-          for (final item in jsonMap) {
-            if (item is Map) {
-              final data = _parser!(Map<String, dynamic>.from(item));
-              _messageController.add(data);
-            }
+      if (jsonMap is List) {
+        // Gelen veri bir liste ise (örn: !miniTicker@arr)
+        for (final item in jsonMap) {
+          if (item is Map) {
+            final data = _parser(Map<String, dynamic>.from(item));
+            _messageController.add(data);
           }
-        } else if (jsonMap is Map) {
-          // Gelen veri tekil obje ise
-          final data = _parser!(Map<String, dynamic>.from(jsonMap));
-          _messageController.add(data);
         }
+      } else if (jsonMap is Map) {
+        // Gelen veri tekil obje ise
+        final data = _parser(Map<String, dynamic>.from(jsonMap));
+        _messageController.add(data);
       }
     } catch (e, s) {
       if (_messageController.isClosed) return;
@@ -193,9 +197,15 @@ class WebSocketService<T> {
   }
 
   void _handleDisconnect() {
-    _heartbeatTimer?.cancel();
     _updateStatus(SocketStatus.disconnected);
-    _scheduleReconnect();
+    _heartbeatTimer?.cancel();
+    _logger.warning('Socket Disconnected');
+    if (!_manuellyRetry) {
+      _scheduleReconnect();
+    }
+    _logger.info(
+      'Manual retry is enabled, not scheduling automatic reconnect.',
+    );
   }
 
   void _scheduleReconnect() {
@@ -204,19 +214,47 @@ class WebSocketService<T> {
 
     final delay = (_retryCount * _retryCount).clamp(1, _maxRetryDelaySeconds);
 
-    _logger.info('Reconnecting in $delay seconds...');
+    _logger.info(
+      'Connection lost. Reconnecting in $delay seconds... '
+      '(attempt $_retryCount)',
+    );
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(seconds: delay), () {
       if (_lastUrl != null) {
-        unawaited(connect(_lastUrl!));
+        unawaited(connect(_lastUrl!, useIsolate: _useIsolate));
       }
     });
   }
 
   void _updateStatus(SocketStatus newStatus) {
     if (_statusController.isClosed) return;
+    if (_status != newStatus) {
+      _logger.info('Socket Status Changed: $_status -> $newStatus');
+    }
     _status = newStatus;
     _statusController.add(_status);
+  }
+
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer(_inactivityTimeout, _onHeartbeatTimeout);
+  }
+
+  void _resetHeartbeat() {
+    if (_heartbeatTimer != null) {
+      _heartbeatTimer!.cancel();
+      _heartbeatTimer = Timer(_inactivityTimeout, _onHeartbeatTimeout);
+    }
+  }
+
+  void _onHeartbeatTimeout() {
+    _logger.warning(
+      'No data received for ${_inactivityTimeout.inSeconds}s. Assuming connection is dead.',
+    );
+    // Move to disconnected state immediately to trigger reconnect logic
+    // We assume the socket is dead, so we don't wait for 'onDone'
+    unawaited(_channel?.sink.close(status.goingAway));
+    _handleDisconnect();
   }
 
   /// Manually closes the connection.
@@ -235,10 +273,25 @@ class WebSocketService<T> {
 
   /// Completely closes the service and cleans up resources (Streams are closed).
   void dispose() {
-    // Remove this type from pool
-    _instances.remove(T);
     unawaited(disconnect());
+
+    // Clean up isolate
+    unawaited(_isolateSubscription?.cancel());
+    _isolateParser?.dispose();
+    _isolateParser = null;
+
     unawaited(_statusController.close());
     unawaited(_messageController.close());
+  }
+
+  /// Allows manual retrying of the connection. If already connected or connecting, it will ignore the request.
+  Future<void> manualRetry() async {
+    if (_status == SocketStatus.connected ||
+        _status == SocketStatus.connecting) {
+      _logger.warning('Already connected or connecting, manual retry ignored.');
+      return;
+    }
+    _logger.info('Manual retry initiated by user.');
+    unawaited(connect(_lastUrl!, useIsolate: _useIsolate));
   }
 }
