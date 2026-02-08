@@ -51,7 +51,8 @@ class MarketManager {
         )
         .map((_) => _tickerMap[symbol])
         .where((t) => t != null)
-        .cast<CoinTicker>();
+        .cast<CoinTicker>()
+        .distinct();
   }
 
   /// Initializes the manager by fetching the initial snapshot and setting up the WebSocket connection.

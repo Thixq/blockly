@@ -81,11 +81,16 @@ class HomeViewModel extends ChangeNotifier {
         _applyFilter();
       }
 
-      if (_state == HomeViewState.loading) {
+      final stateChanged = _state == HomeViewState.loading;
+      if (stateChanged) {
         _state = HomeViewState.loaded;
       }
 
-      notifyListeners();
+      // Only notify UI when list structure changed or view state changed.
+      // Price-only updates are handled by SmartCoinRow via MarketManager.getTicker().
+      if (isSnapshotEmission || stateChanged) {
+        notifyListeners();
+      }
     });
 
     try {
