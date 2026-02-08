@@ -1,11 +1,14 @@
+// ignore_for_file: avoid_dynamic_calls, document_ignores
+
 import 'dart:async';
 
 import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // Simple model for testing
-class TestMessage {
-  TestMessage({required this.id, required this.content});
+class TestMessage extends Equatable {
+  const TestMessage({required this.id, required this.content});
 
   factory TestMessage.fromJson(Map<String, dynamic> json) {
     return TestMessage(
@@ -20,13 +23,7 @@ class TestMessage {
   String toString() => 'TestMessage(id: $id, content: $content)';
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is TestMessage && other.id == id && other.content == content;
-  }
-
-  @override
-  int get hashCode => id.hashCode ^ content.hashCode;
+  List<Object?> get props => [id, content];
 }
 
 // Top-level parser function for Isolate compatibility
@@ -101,7 +98,7 @@ void main() {
     ''';
 
     final controller = StreamController<dynamic>();
-    parser.output.pipe(controller);
+    unawaited(parser.output.pipe(controller));
 
     final events = <dynamic>[];
     controller.stream.listen(events.add);
@@ -160,7 +157,7 @@ void main() {
     ''';
 
       final controller = StreamController<dynamic>();
-      parser.output.pipe(controller);
+      unawaited(parser.output.pipe(controller));
 
       final events = <dynamic>[];
       controller.stream.listen(events.add);
