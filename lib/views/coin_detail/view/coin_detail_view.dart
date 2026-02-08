@@ -40,7 +40,7 @@ class CoinDetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('$symbol Detay'),
+        title: Text('$symbol Detail'),
       ),
       body: const Padding(
         padding: EdgeInsets.all(16),

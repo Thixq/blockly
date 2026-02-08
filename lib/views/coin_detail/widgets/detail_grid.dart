@@ -18,45 +18,45 @@ class DetailGrid extends StatelessWidget {
       children: [
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.highPrice,
-          builder: (_, val, __) => DetailCard(
-            title: '24s En Yüksek',
+          builder: (_, val, _) => DetailCard(
+            title: '24h Highest',
             value: val ?? '-',
             valueColor: Colors.green,
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.lowPrice,
-          builder: (_, val, __) => DetailCard(
-            title: '24s En Düşük',
+          builder: (_, val, _) => DetailCard(
+            title: '24h Lowest',
             value: val ?? '-',
             valueColor: Colors.red,
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.volume,
-          builder: (_, val, __) => DetailCard(
-            title: 'Hacim',
+          builder: (_, val, _) => DetailCard(
+            title: 'Volume',
             value: double.tryParse(val ?? '0')?.toStringAsFixed(2) ?? '-',
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.quoteVolume,
-          builder: (_, val, __) => DetailCard(
-            title: 'Quote Hacim',
+          builder: (_, val, _) => DetailCard(
+            title: 'Quote Volume',
             value: double.tryParse(val ?? '0')?.toStringAsFixed(2) ?? '-',
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.openPrice,
-          builder: (_, val, __) => DetailCard(
-            title: 'Açılış Fiyatı',
+          builder: (_, val, _) => DetailCard(
+            title: 'Open Price',
             value: val ?? '-',
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.weightedAvgPrice,
-          builder: (_, val, __) => DetailCard(
-            title: 'Ağırlıklı Ort.',
+          builder: (_, val, _) => DetailCard(
+            title: 'Weighted Avg.',
             value: val ?? '-',
           ),
         ),
