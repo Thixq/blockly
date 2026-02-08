@@ -16,7 +16,7 @@ typedef WebSocketChannelFactory = WebSocketChannel Function(Uri uri);
 /// WebSocketService is a generic service class designed to manage WebSocket connections.
 /// [T] represents the data model that will be received over the socket.
 class WebSocketService<T> {
-  /// Constructor
+  /// Constructor that takes a parser function to convert JSON maps to the desired type.
   WebSocketService({required Parser<T> parser, bool? manuellyRetry})
     : _parser = parser,
       _manuellyRetry = manuellyRetry ?? false;
@@ -37,7 +37,6 @@ class WebSocketService<T> {
   final int _maxRetryDelaySeconds = 60;
   Timer? _reconnectTimer;
 
-  // Heartbeat variables
   Timer? _heartbeatTimer;
   final Duration _inactivityTimeout = const Duration(seconds: 5);
 
@@ -55,7 +54,6 @@ class WebSocketService<T> {
 
   StreamSubscription<dynamic>? _subscription;
 
-  // Background Isolate Parser
   WebSocketIsolateParser<T>? _isolateParser;
   bool _useIsolate = false;
   StreamSubscription<dynamic>? _isolateSubscription;
@@ -71,13 +69,11 @@ class WebSocketService<T> {
       return;
     }
 
-    // Initialize isolate if requested
     if (_useIsolate && _isolateParser == null) {
       try {
         _isolateParser = WebSocketIsolateParser<T>(_parser);
         await _isolateParser!.spawn();
 
-        // Listen to objects coming from the isolate
         _isolateSubscription = _isolateParser!.output.listen((data) {
           if (data is List) {
             for (final item in data) {
@@ -87,10 +83,11 @@ class WebSocketService<T> {
             _messageController.add(data);
           }
         });
-      } catch (e) {
+      } catch (e, s) {
         _logger.error(
           'Failed to spawn isolate, falling back to main thread.',
           error: e,
+          stackTrace: s,
         );
         _useIsolate = false;
         _isolateParser?.dispose();
@@ -115,8 +112,12 @@ class WebSocketService<T> {
       _subscription = _channel!.stream.listen(
         _onMessageReceived,
         onDone: disconnect,
-        onError: (Object? error) {
-          _logger.error('Stream error occurred', error: error);
+        onError: (Object? error, StackTrace? stackTrace) {
+          _logger.error(
+            'Stream error occurred',
+            error: error,
+            stackTrace: stackTrace,
+          );
           _handleDisconnect();
         },
       );
@@ -153,13 +154,11 @@ class WebSocketService<T> {
         );
       }
 
-      // 1. ISOLATE PATH
       if (_useIsolate && _isolateParser != null) {
         _isolateParser!.parse(payload);
         return;
       }
 
-      // 2. MAIN THREAD PATH (Fallback)
       final jsonMap = jsonDecode(payload);
 
       if (_messageController.isClosed) return;
@@ -169,7 +168,6 @@ class WebSocketService<T> {
       }
 
       if (jsonMap is List) {
-        // Gelen veri bir liste ise (örn: !miniTicker@arr)
         for (final item in jsonMap) {
           if (item is Map) {
             final data = _parser(Map<String, dynamic>.from(item));
@@ -177,7 +175,6 @@ class WebSocketService<T> {
           }
         }
       } else if (jsonMap is Map) {
-        // Gelen veri tekil obje ise
         final data = _parser(Map<String, dynamic>.from(jsonMap));
         _messageController.add(data);
       }
@@ -251,8 +248,6 @@ class WebSocketService<T> {
     _logger.warning(
       'No data received for ${_inactivityTimeout.inSeconds}s. Assuming connection is dead.',
     );
-    // Move to disconnected state immediately to trigger reconnect logic
-    // We assume the socket is dead, so we don't wait for 'onDone'
     unawaited(_channel?.sink.close(status.goingAway));
     _handleDisconnect();
   }
@@ -275,7 +270,6 @@ class WebSocketService<T> {
   void dispose() {
     unawaited(disconnect());
 
-    // Clean up isolate
     unawaited(_isolateSubscription?.cancel());
     _isolateParser?.dispose();
     _isolateParser = null;

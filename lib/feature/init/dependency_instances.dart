@@ -19,7 +19,7 @@ final class DependencyInstances {
 /// Example usage:
 /// ```dart
 /// final dio = DependencyInstances.service.dioService;
-/// final socketService = DependencyInstances.service.webSocketService<MiniTicker>();
+/// final socketService = DependencyInstances.service.webSocketService(parser: MiniTicker.fromJson);
 /// ```
 /// This class serves as a single point of access for all dependencies, making it easier to manage and retrieve them throughout the app without directly coupling to the GetIt instance.
 final class DependencyServices {

@@ -16,7 +16,7 @@ class WebSocketIsolateParser<T> {
 
   final Parser<T> _parser;
 
-  /// Number of items to batch together before sending to the main thread.
+  /// The number of items to parse before sending a chunk back to the main isolate.
   final int chunkSize;
   final CustomLogger _logger = CustomLogger('WebSocketIsolateParser');
 
@@ -40,14 +40,12 @@ class WebSocketIsolateParser<T> {
     // Listen for messages from the isolate (Handshake & Data)
     _receivePort!.listen((message) {
       if (message is SendPort) {
-        // Handshake received
         _isolateSendPort = message;
         if (!readyCompleter.isCompleted) readyCompleter.complete();
       } else if (message is _IsolateError) {
         _logger.error('Error in isolate', error: message.error);
         _outputController?.addError(message.error);
       } else {
-        // Parsed data received
         _outputController?.add(message);
       }
     });
@@ -90,15 +88,11 @@ class WebSocketIsolateParser<T> {
   /// The entry point for the isolate
   static void _entryPoint<T>(_IsolateInit<T> init) {
     final receivePort = ReceivePort();
-    // 1. Send our SendPort back to main thread (Handshake)
     init.mainSendPort.send(receivePort.sendPort);
 
-    // 2. Listen for strings to parse
     receivePort.listen((message) {
       if (message is String) {
         try {
-          // Optimization: If it looks like a Map (starts with {), use standard jsonDecode
-          // It's much faster for single objects.
           if (message.trimLeft().startsWith('{')) {
             final dynamic json = jsonDecode(message);
             if (json is Map) {
@@ -109,8 +103,6 @@ class WebSocketIsolateParser<T> {
             return;
           }
 
-          // If it looks like a List (starts with [), use Manual Scanner
-          // This avoids loading the entire huge list into memory at once
           if (message.trimLeft().startsWith('[')) {
             final currentChunk = <T>[];
             var braceDepth = 0;
@@ -155,7 +147,6 @@ class WebSocketIsolateParser<T> {
                     // Skip malformed items
                   }
 
-                  // Send Chunk if full
                   if (currentChunk.length >= init.chunkSize) {
                     init.mainSendPort.send(List<T>.from(currentChunk));
                     currentChunk.clear();
@@ -165,17 +156,14 @@ class WebSocketIsolateParser<T> {
               }
             }
 
-            // Send remaining items
             if (currentChunk.isNotEmpty) {
               init.mainSendPort.send(currentChunk);
             }
             return;
           }
 
-          // Fallback for unknown formats (rare)
           final dynamic json = jsonDecode(message);
           if (json is List) {
-            // ... existing list logic just in case ...
             final currentChunk = <T>[];
             for (final item in json) {
               if (item is Map) {

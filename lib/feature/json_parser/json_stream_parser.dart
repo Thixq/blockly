@@ -13,11 +13,11 @@ class JsonStreamParser {
 
   /// Spawns an isolate to parse the [jsonString] into a list of [T].
   ///
-  /// [mapper] must be a static or top-level function that converts a Map to T.
+  /// [parser] must be a static or top-level function that converts a Map to T.
   /// Returns a [Stream] that emits chunks of [T] objects.
   Stream<List<T>> parse<T>(
     String jsonString,
-    T Function(Map<String, dynamic> source) mapper, {
+    T Function(Map<String, dynamic> source) parser, {
     int chunkSize = 100,
   }) {
     _logger.info('Starting parsing. ChunkSize: $chunkSize');
@@ -32,17 +32,15 @@ class JsonStreamParser {
           jsonString,
           receivePort.sendPort,
           chunkSize,
-          mapper,
+          parser,
         ),
       ).then((isolate) {
         _logger.debug('Isolate spawned.');
-        // Listen for messages from the isolate
+
         receivePort.listen(
           (dynamic message) {
             if (message is List) {
-              // Received a chunk of data
               try {
-                // Cast the incoming list to List<T>
                 final typedChunk = message.cast<T>();
                 _logger.debug('Received chunk of ${typedChunk.length} items');
                 controller.add(typedChunk);
@@ -58,7 +56,6 @@ class JsonStreamParser {
                 );
               }
             } else if (message is _IsolateError) {
-              // Received an error
               _logger.error(
                 'Error from isolate',
                 error: message.error,
@@ -86,27 +83,23 @@ class JsonStreamParser {
         );
       }),
     );
-
     return controller.stream;
   }
 
-  /// The entry point for the isolate.
+  // The entry point for the isolate.
   static void _isolateEntry<T>(_IsolateInput<T> input) {
     try {
       final jsonStr = input.jsonString;
       final currentChunk = <T>[];
 
-      // Manual JSON Scanner variables
       var braceDepth = 0;
       var inString = false;
       var isEscaped = false;
       var startIndex = -1;
 
-      // Iterate through the string characters
       for (var i = 0; i < jsonStr.length; i++) {
         final char = jsonStr[i];
 
-        // Handle Escape Characters inside strings (e.g. "He said \"Hello\"")
         if (isEscaped) {
           isEscaped = false;
           continue;
@@ -117,32 +110,25 @@ class JsonStreamParser {
           continue;
         }
 
-        // Handle String Boundaries
         if (char == '"') {
           inString = !inString;
           continue;
         }
 
-        // If we are inside a string value, ignore braces
         if (inString) continue;
 
-        // Detect Object Start
         if (char == '{') {
           if (braceDepth == 0) {
-            startIndex = i; // Mark the start of an object
+            startIndex = i;
           }
           braceDepth++;
-        }
-        // Detect Object End
-        else if (char == '}') {
+        } else if (char == '}') {
           braceDepth--;
 
-          // If depth returns to 0, we found a complete JSON object {...}
           if (braceDepth == 0 && startIndex != -1) {
             final objectString = jsonStr.substring(startIndex, i + 1);
 
             try {
-              // Parse ONLY this small piece
               final dynamic map = jsonDecode(objectString);
               if (map is Map<String, dynamic>) {
                 currentChunk.add(input.mapper(map));
@@ -152,13 +138,12 @@ class JsonStreamParser {
               // print('Error parsing chunk: $e');
             }
 
-            // Check Chunk Size
             if (currentChunk.length >= input.chunkSize) {
               input.sendPort.send(List<T>.from(currentChunk));
               currentChunk.clear();
             }
 
-            startIndex = -1; // Reset start index
+            startIndex = -1;
           }
         }
       }
@@ -168,7 +153,6 @@ class JsonStreamParser {
         input.sendPort.send(currentChunk);
       }
 
-      // Signal completion
       input.sendPort.send(null);
     } catch (e, s) {
       input.sendPort.send(_IsolateError(e, s));

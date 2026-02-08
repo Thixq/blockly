@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 /// Displays a 2-column grid of detail cards (high, low, volume, etc.).
 class DetailGrid extends StatelessWidget {
-  /// Constructor
+  /// Constructor for DetailGrid widget.
   const DetailGrid({super.key});
 
   @override

@@ -47,9 +47,6 @@ final class DependencyContainer {
     _getIt.registerLazySingleton<MarketManager>(
       () => MarketManager(
         dioService: _getIt<DioService>(),
-        // Burada doğrudan tip belirterek çağırıyoruz.
-        // WebSocketService içindeki factory sayesinde eğer MiniTicker
-        // havuzda varsa o gelecek, yoksa yeni oluşacak.
         socketService: readOrCreate<WebSocketService<MiniTicker>>(
           () => WebSocketService<MiniTicker>(
             parser: MiniTicker.fromJson,

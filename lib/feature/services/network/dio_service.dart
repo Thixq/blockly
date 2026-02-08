@@ -63,9 +63,6 @@ class DioService {
     int chunkSize = 100,
   }) async* {
     try {
-      // 1. Fetch raw response as String
-      // IMPORTANT: responseType: ResponseType.plain is required to get raw JSON string.
-      // We do not want Dio to parse it on main thread.
       final response = await _dio.request<String>(
         url,
         data: data,
@@ -83,12 +80,8 @@ class DioService {
         return;
       }
 
-      // 2. Spawn isolate and start streaming chunks
-      // The 'fromJson' logic (mapping) will also run in the background isolate.
       final parser = JsonStreamParser();
 
-      // We directly yield the stream from the parser.
-      // Unlike the previous version, no mapping happens here on the main thread.
       yield* parser.parse<T>(
         jsonString,
         fromJson,
@@ -100,7 +93,6 @@ class DioService {
         error: e,
         stackTrace: s,
       );
-      // Manually log error since we are in a stream generator
       yield* Stream.error(e, s);
     }
   }

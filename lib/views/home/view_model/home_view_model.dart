@@ -80,7 +80,6 @@ class HomeViewModel extends ChangeNotifier {
     await _subscription?.cancel();
     await _socketStatusSubscription?.cancel();
 
-    // Listen to socket disconnections
     _socketStatusSubscription = _manager.socketStatusStream.listen((status) {
       if (status == SocketStatus.disconnected &&
           _state == HomeViewState.loaded) {
@@ -108,8 +107,6 @@ class HomeViewModel extends ChangeNotifier {
         _state = HomeViewState.loaded;
       }
 
-      // Only notify UI when list structure changed or view state changed.
-      // Price-only updates are handled by SmartCoinRow via MarketManager.getTicker().
       if (isSnapshotEmission || stateChanged) {
         notifyListeners();
       }

@@ -42,15 +42,12 @@ class CoinTicker extends Equatable {
   /// Creates a copy of this CoinTicker with updated fields from a MiniTicker.
   /// Also recalculates priceChange and priceChangePercent to maintain consistency.
   CoinTicker copyWithMiniTicker(MiniTicker mini) {
-    // Use new values from MiniTicker or fallback to current values
     final newLastPriceStr = mini.c ?? lastPrice;
     final newOpenPriceStr = mini.o ?? openPrice;
 
     var newPriceChange = priceChange;
     var newPriceChangePercent = priceChangePercent;
 
-    // Recalculate change statistics to prevent UI inconsistency
-    // (e.g. Price updates but % change stays old)
     if (newLastPriceStr != null && newOpenPriceStr != null) {
       final last = double.tryParse(newLastPriceStr);
       final open = double.tryParse(newOpenPriceStr);
@@ -59,7 +56,6 @@ class CoinTicker extends Equatable {
         final change = last - open;
         final percent = (change / open) * 100;
 
-        // Keep precision reasonable
         newPriceChange = change.toString();
         newPriceChangePercent = percent.toStringAsFixed(3);
       }

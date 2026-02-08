@@ -74,8 +74,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset:
-          false, // Performance fix: Prevents list rebuild on keyboard open
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,

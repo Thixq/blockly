@@ -1,15 +1,15 @@
-/// WebSocketService, WebSocket bağlantılarını yönetmek için tasarlanmış bir servis sınıfıdır.
-/// Bağlantı durumunu izler, mesajları işler ve otomatik yeniden bağlanma mekanizması sağlar.
+///WebSocketService is a service class developed for creating WebSocket connections.
+///It provides connection images, connection segments, and automatic reconnection segments.
 enum SocketStatus {
-  /// Bağlantı kuruluyor
+  /// Connection in progress
   connecting,
 
-  /// Bağlantı başarılı
+  /// Connection established successfully
   connected,
 
-  /// Bağlantı kesildi
+  /// Connection has been closed or lost
   disconnected,
 
-  /// Yeniden bağlanma sürecinde
+  /// Attempting to reconnect after a disconnection
   reconnecting,
 }

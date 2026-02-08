@@ -33,10 +33,8 @@ class CoinDetailViewModel extends ChangeNotifier {
     if (_symbol == null) return;
     final symbol = _symbol!;
 
-    // Başlangıç verisini al
     _ticker = _marketManager.getTicker(symbol);
 
-    // Stream dinlemeyi başlat
     unawaited(_subscription?.cancel());
     _subscription = _marketManager.getCoinStream(symbol).listen((newTicker) {
       _ticker = newTicker;

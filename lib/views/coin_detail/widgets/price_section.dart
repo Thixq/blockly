@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 /// Displays the current price and percentage change for the selected coin.
 class PriceSection extends StatelessWidget {
-  /// Constructor
+  /// Constructor for PriceSection widget.
   const PriceSection({super.key});
 
   @override
