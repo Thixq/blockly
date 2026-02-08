@@ -142,7 +142,7 @@ void main() {
         lessThanOrEqualTo(1),
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
 
       final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
@@ -187,7 +187,7 @@ void main() {
         ..add(btcUpdate)
         ..add(ethUpdate);
 
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
 
       final latestList = emissions.last.allTickers;
       final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');
@@ -277,7 +277,7 @@ void main() {
           );
         }
 
-        await Future<void>.delayed(const Duration(milliseconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
 
         final latestList = emissions.last.allTickers;
         final updatedBtc = latestList.firstWhere((t) => t.symbol == 'BTCUSDT');

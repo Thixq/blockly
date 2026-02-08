@@ -35,8 +35,6 @@ class HomeViewModel extends ChangeNotifier {
   List<CoinTicker> _displayList = [];
   List<CoinTicker> _allTickers = [];
 
-  Map<String, CoinTicker> _tickerMap = {};
-
   String _searchText = 'TRY';
   HomeViewState _state = HomeViewState.loading;
   String? _errorMessage;
@@ -76,17 +74,16 @@ class HomeViewModel extends ChangeNotifier {
 
     await _subscription?.cancel();
     _subscription = _manager.marketStream.listen((state) {
-      _tickerMap = {
-        for (final t in state.allTickers)
-          if (t.symbol != null) t.symbol!: t,
-      };
-      _allTickers = state.allTickers;
+      final isSnapshotEmission = state.changedTickers.isEmpty;
+
+      if (isSnapshotEmission) {
+        _allTickers = state.allTickers;
+        _applyFilter();
+      }
 
       if (_state == HomeViewState.loading) {
         _state = HomeViewState.loaded;
       }
-
-      _applyFilter();
 
       notifyListeners();
     });
@@ -106,8 +103,9 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   /// Retrieves the CoinTicker for a specific symbol. Returns null if not found.
+  /// Delegates to [MarketManager.getTicker] to avoid duplicate map storage.
   CoinTicker? getTickerBySymbol(String symbol) {
-    return _tickerMap[symbol];
+    return _manager.getTicker(symbol);
   }
 
   /// Returns the list of CoinTickers to be displayed in the UI, filtered by the current search text.

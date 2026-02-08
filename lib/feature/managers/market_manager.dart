@@ -14,7 +14,7 @@ import 'package:blockly/feature/services/web_socket/web_socket_service.dart';
 /// [MarketManager] organizes the data flow between REST API (Snapshot) and WebSocket (Real-time updates).
 /// It implements a throttling mechanism to batch UI updates for performance.
 class MarketManager {
-  /// Constructor allowing dependency injection
+  /// Constructor
   MarketManager({
     required DioService dioService,
     required WebSocketService<MiniTicker> socketService,
@@ -42,7 +42,6 @@ class MarketManager {
   CoinTicker? getTicker(String symbol) => _tickerMap[symbol];
 
   /// Returns a stream for a specific coin's updates derived from the main market stream.
-  /// Uses [changedTickers] to skip irrelevant emissions and [_tickerMap] for O(1) lookup.
   Stream<CoinTicker> getCoinStream(String symbol) {
     return marketStream
         .where(
@@ -92,10 +91,8 @@ class MarketManager {
   void _setupWebSocket() {
     _socketService.setParser(MiniTicker.fromJson);
 
-    // Listen to socket messages
     _socketService.messages.listen(
       (miniTicker) {
-        // Add to buffer (Last Write Wins strategy)
         if (miniTicker.s != null) {
           _pendingUpdates[miniTicker.s!] = miniTicker;
         }
@@ -108,7 +105,7 @@ class MarketManager {
     unawaited(
       _socketService.connect(
         Env.binancePriceSocketUrl + UrlConst.miniTicker,
-        useIsolate: true, // Enable background parsing for heavy potential load
+        useIsolate: true,
       ),
     );
   }
