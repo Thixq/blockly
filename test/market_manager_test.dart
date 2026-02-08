@@ -59,7 +59,9 @@ void main() {
     when(
       mockSocketService.messages,
     ).thenAnswer((_) => socketStreamController.stream);
-    when(mockSocketService.connect(any)).thenAnswer((_) async {});
+    when(
+      mockSocketService.connect(any, useIsolate: anyNamed('useIsolate')),
+    ).thenAnswer((_) async {});
     when(mockSocketService.setParser(any)).thenReturn(null);
     when(mockSocketService.dispose()).thenReturn(null);
 
@@ -108,6 +110,7 @@ void main() {
       verify(
         mockSocketService.connect(
           Env.binancePriceSocketUrl + UrlConst.miniTicker,
+          useIsolate: true,
         ),
       ).called(1);
     });
