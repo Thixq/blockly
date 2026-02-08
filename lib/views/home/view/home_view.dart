@@ -4,7 +4,6 @@ import 'package:blockly/core/extensions/context_extension.dart';
 import 'package:blockly/feature/models/coin_ticker.dart';
 import 'package:blockly/views/home/view_model/home_view_model.dart';
 import 'package:blockly/views/home/widgets/smart_coin_row.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -40,7 +39,6 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _onStateChanged() {
-    print('Home view state: ${_viewModel.state}');
     if (!mounted) return;
     if (_viewModel.state == HomeViewState.error ||
         _viewModel.state == HomeViewState.disconnected) {
