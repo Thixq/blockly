@@ -51,23 +51,7 @@ The initial snapshot is fetched using a REST API, followed by real-time price up
 lib/
 ├── main.dart                          # App entry point
 ├── core/
-│   ├── extensions/
-│   │   ├── context_extension.dart     # Theme shortcuts (colorScheme, textTheme)
-│   │   └── num_extension.dart         # Percentage-based screen size calculation
-│   └── logging/
-│       ├── custom_logger.dart         # Module-based logger wrapper
-│       ├── log_manager.dart           # Root logger configuration
-│       └── zone_manager.dart          # Global error handling (runZonedGuarded)
 ├── feature/
-│   ├── const/
-│   │   └── url_const.dart             # API endpoint constants
-│   ├── enums/
-│   │   └── socket_status_enum.dart    # WebSocket connection states
-│   ├── env/
-│   │   └── env.dart                   # Obfuscated environment variables (envied)
-│   ├── init/
-│   │   ├── dependency_container.dart  # GetIt DI configuration
-│   │   └── dependency_instances.dart  # DI access facade
 │   ├── json_parser/
 │   │   ├── json_stream_parser.dart         # REST response isolate parser
 │   │   └── websocket_isolate_parser.dart   # WebSocket isolate parser
@@ -84,23 +68,6 @@ lib/
 │       └── web_socket/
 │           └── web_socket_service.dart # WebSocket lifecycle management
 └── views/
-    ├── home/
-    │   ├── view/
-    │   │   └── home_view.dart          # Main screen (search + coin list)
-    │   ├── view_model/
-    │   │   └── home_view_model.dart    # Main screen state management
-    │   └── widgets/
-    │       └── smart_coin_row.dart     # Row widget subscribed to its own stream
-    └── coin_detail/
-        ├── view/
-        │   └── coin_detail_view.dart   # Detail screen
-        ├── view_model/
-        │   └── coin_detail_view_model.dart  # Detail state management
-        └── widgets/
-            ├── detail_card.dart        # Individual info card
-            ├── detail_grid.dart        # 2-column stats grid
-            └── price_section.dart      # Price and change percentage
-
 ```
 
 ---

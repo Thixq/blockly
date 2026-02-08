@@ -50,24 +50,8 @@ REST API ile ilk snapshot alınır, ardından WebSocket üzerinden gerçek zaman
 lib/
 ├── main.dart                          # Uygulama giriş noktası
 ├── core/
-│   ├── extensions/
-│   │   ├── context_extension.dart     # Theme shortcut'ları (colorScheme, textTheme)
-│   │   └── num_extension.dart         # Yüzdelik ekran boyutu hesaplama
-│   └── logging/
-│       ├── custom_logger.dart         # Modül bazlı logger wrapper
-│       ├── log_manager.dart           # Root logger konfigürasyonu
-│       └── zone_manager.dart          # Global hata yakalama (runZonedGuarded)
 ├── feature/
-│   ├── const/
-│   │   └── url_const.dart             # API endpoint sabitleri
-│   ├── enums/
-│   │   └── socket_status_enum.dart    # WebSocket bağlantı durumları
-│   ├── env/
-│   │   └── env.dart                   # Obfuscated ortam değişkenleri (envied)
-│   ├── init/
-│   │   ├── dependency_container.dart  # GetIt DI konfigürasyonu
-│   │   └── dependency_instances.dart  # DI erişim facade'ı
-│    ├── json_parser/
+│   ├── json_parser/
 │   │   ├── json_stream_parser.dart         # REST response isolate parser
 │   │   └── websocket_isolate_parser.dart   # WebSocket isolate parser
 │   ├── managers/
@@ -83,22 +67,6 @@ lib/
 │       └── web_socket/
 │           └── web_socket_service.dart # WebSocket yaşam döngüsü yönetimi
 └── views/
-    ├── home/
-    │   ├── view/
-    │   │   └── home_view.dart          # Ana ekran (arama + coin listesi)
-    │   ├── view_model/
-    │   │   └── home_view_model.dart    # Ana ekran state yönetimi
-    │   └── widgets/
-    │       └── smart_coin_row.dart     # Kendi stream'ine abone satır widget'ı
-    └── coin_detail/
-        ├── view/
-        │   └── coin_detail_view.dart   # Detay ekranı
-        ├── view_model/
-        │   └── coin_detail_view_model.dart  # Detay state yönetimi
-        └── widgets/
-            ├── detail_card.dart        # Tekil bilgi kartı
-            ├── detail_grid.dart        # 2 sütunlu istatistik grid'i
-            └── price_section.dart      # Fiyat ve değişim yüzdesi
 ```
 
 ---
