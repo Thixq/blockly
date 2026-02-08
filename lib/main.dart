@@ -31,11 +31,6 @@ class MyApp extends StatelessWidget {
               HomeViewModel(DependencyInstances.manager.marketManager),
           lazy: true,
         ),
-        ChangeNotifierProvider(
-          create: (_) =>
-              CoinDetailViewModel(DependencyInstances.manager.marketManager),
-          lazy: true,
-        ),
       ],
       child: MaterialApp(
         theme: ThemeData.from(
