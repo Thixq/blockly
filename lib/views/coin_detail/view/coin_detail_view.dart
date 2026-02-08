@@ -21,15 +21,20 @@ class CoinDetailView extends StatefulWidget {
 }
 
 class _CoinDetailViewState extends State<CoinDetailView> {
+  CoinDetailViewModel? _viewModel;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Disposal sırasında context'e erişemeyeceğimiz için referansı burada saklıyoruz.
+    _viewModel = context.read<CoinDetailViewModel>();
+
     // "setState() or markNeedsBuild() called during build" hatasını önlemek için
     // güncelleme işlemini frame sonuna erteliyoruz.
     unawaited(
       Future.microtask(() {
-        if (mounted) {
-          context.read<CoinDetailViewModel>().setSymbol(widget.symbol);
+        if (mounted && _viewModel != null) {
+          _viewModel!.setSymbol(widget.symbol);
         }
       }),
     );
@@ -37,7 +42,7 @@ class _CoinDetailViewState extends State<CoinDetailView> {
 
   @override
   void dispose() {
-    context.read<CoinDetailViewModel>().dispose();
+    _viewModel = null;
     super.dispose();
   }
 

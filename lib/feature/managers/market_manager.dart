@@ -30,7 +30,7 @@ class MarketManager {
   final Map<String, MiniTicker> _pendingUpdates = {};
 
   Timer? _throttleTimer;
-  static const Duration _throttleDuration = Duration(milliseconds: 500);
+  static const Duration _throttleDuration = Duration(milliseconds: 1000);
 
   final StreamController<MarketState> _marketStreamController =
       StreamController<MarketState>.broadcast();

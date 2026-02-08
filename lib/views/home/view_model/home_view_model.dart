@@ -75,7 +75,7 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     await _subscription?.cancel();
-    _subscription = _manager.marketStream.listen((state) {
+    _subscription = _manager.marketStream.distinct().listen((state) {
       _tickerMap = {for (final t in state.allTickers) t.symbol!: t};
       _allTickers = state.allTickers;
 
