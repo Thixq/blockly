@@ -1,6 +1,6 @@
 import 'package:blockly/feature/init/dependency_container.dart';
-import 'package:blockly/feature/managers/market_manager.dart';
 import 'package:blockly/feature/json_parser/websocket_isolate_parser.dart';
+import 'package:blockly/feature/managers/market_manager.dart';
 import 'package:blockly/feature/services/network/dio_service.dart';
 import 'package:blockly/feature/services/web_socket/web_socket_service.dart';
 
