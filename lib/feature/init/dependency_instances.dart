@@ -30,7 +30,9 @@ final class DependencyServices {
   /// Retrieves a WebSocketService instance for the specified type [T] from the DependencyContainer.
   /// This allows for type-safe access to different WebSocketService instances if needed.
   WebSocketService<T> webSocketService<T>() =>
-      DependencyContainer.read<WebSocketService<T>>();
+      DependencyContainer.readOrCreate<WebSocketService<T>>(
+        WebSocketService<T>.new,
+      );
 }
 
 /// Example usage:

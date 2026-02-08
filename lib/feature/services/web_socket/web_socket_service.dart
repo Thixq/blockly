@@ -20,27 +20,6 @@ typedef Parser<T> = T Function(Map<String, dynamic> json);
 /// WebSocketService is a generic service class designed to manage WebSocket connections.
 /// [T] represents the data model that will be received over the socket.
 class WebSocketService<T> {
-  /// Factory Constructor: Returns an existing service for type T if available,
-  /// otherwise creates a new one, adds it to the pool, and returns it.
-  factory WebSocketService() {
-    return _instances.putIfAbsent(T, WebSocketService<T>._internal)
-        as WebSocketService<T>;
-  }
-
-  WebSocketService._internal();
-
-  static final Map<Type, WebSocketService<dynamic>> _instances = {};
-
-  /// Instance reset method for testing purposes (Used in tests)
-  @visibleForTesting
-  static void resetInstance() {
-    for (final instance in _instances.values) {
-      // Trigger disconnect
-      unawaited(instance.disconnect());
-    }
-    _instances.clear();
-  }
-
   Parser<T>? _parser;
 
   /// Method to set the parser externally.
@@ -235,8 +214,6 @@ class WebSocketService<T> {
 
   /// Completely closes the service and cleans up resources (Streams are closed).
   void dispose() {
-    // Remove this type from pool
-    _instances.remove(T);
     unawaited(disconnect());
     unawaited(_statusController.close());
     unawaited(_messageController.close());

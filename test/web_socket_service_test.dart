@@ -19,8 +19,6 @@ void main() {
   late StreamController<dynamic> channelStreamController;
 
   setUp(() {
-    WebSocketService.resetInstance();
-
     mockChannel = MockWebSocketChannel();
     mockSink = MockWebSocketSink();
     channelStreamController = StreamController<dynamic>.broadcast();
@@ -37,29 +35,6 @@ void main() {
 
   tearDown(() {
     unawaited(channelStreamController.close());
-    WebSocketService.resetInstance();
-  });
-
-  group('Managed Pool (Multiton) Tests', () {
-    test('Should return the same instance for the same Type T', () {
-      final s1 = WebSocketService<TestModel>();
-      final s2 = WebSocketService<TestModel>();
-
-      expect(s1, equals(s2));
-    });
-
-    test('Should return different instances for different Types', () {
-      final s1 = WebSocketService<TestModel>();
-      final s2 = WebSocketService<AnotherTestModel>();
-
-      expect(s1, isNot(equals(s2)));
-    });
-
-    test('Should clean up pool on dispose', () {
-      final service = WebSocketService<TestModel>()..dispose();
-      final newService = WebSocketService<TestModel>();
-      expect(service, isNot(equals(newService)));
-    });
   });
 
   group('WebSocketService Standard Tests', () {
@@ -238,5 +213,3 @@ class TestModel {
       TestModel(json['id'] as int);
   final int id;
 }
-
-class AnotherTestModel {}
