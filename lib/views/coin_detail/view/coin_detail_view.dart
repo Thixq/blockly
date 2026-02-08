@@ -1,5 +1,6 @@
 // ignore_for_file: document_ignores
 
+import 'package:blockly/core/extensions/context_extension.dart';
 import 'package:blockly/feature/init/dependency_instances.dart';
 import 'package:blockly/views/coin_detail/view_model/coin_detail_view_model.dart';
 import 'package:blockly/views/coin_detail/widgets/detail_grid.dart';
@@ -40,16 +41,19 @@ class CoinDetailBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: context.colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: Text('$symbol Detail'),
       ),
-      body: const Padding(
+      body: const SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
             SizedBox(height: 20),
             PriceSection(),
             SizedBox(height: 40),
-            Expanded(child: DetailGrid()),
+            DetailGrid(),
           ],
         ),
       ),

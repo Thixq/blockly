@@ -13,8 +13,8 @@ class DetailGrid extends StatelessWidget {
     return GridView.count(
       crossAxisCount: 2,
       childAspectRatio: 1.5,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       children: [
         Selector<CoinDetailViewModel, String?>(
           selector: (_, vm) => vm.ticker?.highPrice,
@@ -47,9 +47,16 @@ class DetailGrid extends StatelessWidget {
           ),
         ),
         Selector<CoinDetailViewModel, String?>(
-          selector: (_, vm) => vm.ticker?.openPrice,
+          selector: (_, vm) => vm.ticker?.bidPrice,
           builder: (_, val, _) => DetailCard(
-            title: 'Open Price',
+            title: 'Bid Price',
+            value: val ?? '-',
+          ),
+        ),
+        Selector<CoinDetailViewModel, String?>(
+          selector: (_, vm) => vm.ticker?.askPrice,
+          builder: (_, val, _) => DetailCard(
+            title: 'Ask Price',
             value: val ?? '-',
           ),
         ),

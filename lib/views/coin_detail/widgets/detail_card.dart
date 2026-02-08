@@ -34,7 +34,7 @@ class DetailCard extends StatelessWidget {
             Text(
               title,
               style: context.textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
+                color: context.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

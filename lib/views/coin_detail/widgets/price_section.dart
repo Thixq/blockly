@@ -10,7 +10,6 @@ class PriceSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // LastPrice veya PriceChange değişirse burası render olur.
     return Selector<CoinDetailViewModel, (String?, String?)>(
       selector: (_, vm) =>
           (vm.ticker?.lastPrice, vm.ticker?.priceChangePercent),
@@ -38,7 +37,7 @@ class PriceSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                '$priceChangePercentStr%',
+                '${priceChangePercent.toStringAsFixed(2)}%',
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
