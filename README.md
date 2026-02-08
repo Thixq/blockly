@@ -1,16 +1,42 @@
-# blockly
+[Türkçe](README.tr.md) | **English**
 
-A new Flutter project.
+# Blockly — Real-Time Cryptocurrency Tracker
 
-## Getting Started
+A high-performance Flutter application that monitors real-time prices for **1500+ coins** via the Binance API.
 
-This project is a starting point for a Flutter application.
+The initial snapshot is fetched using a REST API, followed by real-time price updates via WebSockets. All JSON parsing operations are performed in **background isolates**, ensuring the UI thread is never blocked.
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Architecture Overview
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+``` text
+.env (Env) ──► DioConfig ──► Dio
+                                │
+                    DependencyContainer (GetIt)
+                   ┌────────────┴────────────┐
+                   ▼                         ▼
+              DioService              WebSocketService<MiniTicker>
+                   │                         │
+                   │ REST /ticker/24hr       │ WSS !miniTicker@arr
+                   │ (JsonStreamParser       │ (WebSocketIsolateParser
+                   │  in isolate)            │  in isolate)
+                   └──────────┬──────────────┘
+                              ▼
+                        MarketManager
+                   ┌──── (throttle 1s) ─────┐
+                   │  _tickerMap (snapshot)  │
+                   │  + real-time merge      │
+                   └─────────┬──────────────┘
+                             ▼
+                    Stream<MarketState>
+                   ┌─────────┴──────────┐
+                   ▼                    ▼
+            HomeViewModel        CoinDetailViewModel
+             (Provider)            (Provider)
+                   │                    │
+          ┌────────┴─────┐              ▼
+          ▼              ▼        CoinDetailView
+       HomeView    SmartCoinRow    ├─ PriceSection
+      (search)   (per-coin stream) ├─ DetailGrid
+                                   └─ DetailCard

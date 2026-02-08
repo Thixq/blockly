@@ -72,34 +72,32 @@ class _SmartCoinRowState extends State<SmartCoinRow> {
       }
     }
     _prevPrice = currentPrice;
-    return RepaintBoundary(
-      child: ListTile(
-        onTap: () {
-          unawaited(
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CoinDetailView(symbol: widget.symbol),
-              ),
+    return ListTile(
+      onTap: () {
+        unawaited(
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CoinDetailView(symbol: widget.symbol),
             ),
-          );
-        },
-        title: Text(ticker.symbol ?? ''),
-        subtitle: Text(
-          '${double.tryParse(ticker.priceChangePercent ?? '0')?.toStringAsFixed(2) ?? '0.00'}%',
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: _cachedContainerColor,
-            borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            ticker.lastPrice ?? '0.00',
-            style: TextStyle(
-              color: _cachedTextColor,
-              fontWeight: FontWeight.bold,
-            ),
+        );
+      },
+      title: Text(ticker.symbol ?? ''),
+      subtitle: Text(
+        '${double.tryParse(ticker.priceChangePercent ?? '0')?.toStringAsFixed(2) ?? '0.00'}%',
+      ),
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: _cachedContainerColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          ticker.lastPrice ?? '0.00',
+          style: TextStyle(
+            color: _cachedTextColor,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
