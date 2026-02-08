@@ -26,6 +26,10 @@ class HomeViewModel extends ChangeNotifier {
     unawaited(_init());
   }
   final MarketManager _manager;
+
+  /// Expose the MarketManager instance
+  MarketManager get marketManager => _manager;
+
   StreamSubscription<MarketState>? _subscription;
 
   List<CoinTicker> _displayList = [];

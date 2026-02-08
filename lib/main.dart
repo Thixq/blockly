@@ -2,6 +2,7 @@ import 'package:blockly/core/logging/log_manager.dart';
 import 'package:blockly/core/logging/zone_manager.dart';
 import 'package:blockly/feature/init/dependency_container.dart';
 import 'package:blockly/feature/init/dependency_instances.dart';
+import 'package:blockly/views/coin_detail/view_model/coin_detail_view_model.dart';
 import 'package:blockly/views/home/view/home_view.dart';
 import 'package:blockly/views/home/view_model/home_view_model.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) =>
               HomeViewModel(DependencyInstances.manager.marketManager),
+          lazy: true,
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              CoinDetailViewModel(DependencyInstances.manager.marketManager),
+          lazy: true,
         ),
       ],
       child: MaterialApp(

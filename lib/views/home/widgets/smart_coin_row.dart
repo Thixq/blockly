@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:blockly/feature/models/coin_ticker.dart';
+import 'package:blockly/views/coin_detail/view/coin_detail_view.dart';
 import 'package:blockly/views/home/view_model/home_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -53,6 +56,16 @@ class _SmartCoinRowState extends State<SmartCoinRow> {
         _prevPrice = currentPrice;
         return RepaintBoundary(
           child: ListTile(
+            onTap: () {
+              unawaited(
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CoinDetailView(symbol: widget.symbol),
+                  ),
+                ),
+              );
+            },
             title: Text(ticker.symbol ?? ''),
             subtitle: Text(
               ' ${double.tryParse(ticker.priceChangePercent ?? '0')?.toStringAsFixed(2) ?? '0.00'}%',
