@@ -25,8 +25,8 @@ The initial snapshot is fetched using a REST API, followed by real-time price up
                               ▼
                         MarketManager
                    ┌──── (throttle 1s) ─────┐
-                   │  _tickerMap (snapshot)  │
-                   │  + real-time merge      │
+                   │  _tickerMap (snapshot) │
+                   │  + real-time merge     │
                    └─────────┬──────────────┘
                              ▼
                     Stream<MarketState>

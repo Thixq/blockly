@@ -25,8 +25,8 @@ REST API ile ilk snapshot alınır, ardından WebSocket üzerinden gerçek zaman
                               ▼
                         MarketManager
                    ┌──── (throttle 1s) ─────┐
-                   │  _tickerMap (snapshot)  │
-                   │  + real-time merge      │
+                   │  _tickerMap (snapshot) │
+                   │  + real-time merge     │
                    └─────────┬──────────────┘
                              ▼
                     Stream<MarketState>
