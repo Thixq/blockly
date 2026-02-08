@@ -5,7 +5,7 @@ import 'dart:convert';
 
 import 'package:blockly/core/logging/custom_logger.dart';
 import 'package:blockly/feature/enums/socket_status_enum.dart';
-import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
+import 'package:blockly/feature/json_parser/websocket_isolate_parser.dart';
 import 'package:meta/meta.dart'; // For @visibleForTesting
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:web_socket_channel/web_socket_channel.dart';

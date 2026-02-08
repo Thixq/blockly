@@ -2,7 +2,7 @@
 
 import 'dart:async';
 
-import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart';
+import 'package:blockly/feature/json_parser/websocket_isolate_parser.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_test/flutter_test.dart';
 

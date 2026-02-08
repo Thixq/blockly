@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print, document_ignores
 
 import 'package:blockly/feature/models/coin_ticker.dart';
-import 'package:blockly/feature/services/json_parser/json_stream_parser.dart';
+import 'package:blockly/feature/json_parser/json_stream_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

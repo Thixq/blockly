@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_catches_without_on_clauses, document_ignores
 
 import 'package:blockly/core/logging/custom_logger.dart';
-import 'package:blockly/feature/services/json_parser/json_stream_parser.dart';
+import 'package:blockly/feature/json_parser/json_stream_parser.dart';
 import 'package:dio/dio.dart';
 
 ///Basic HTTP Request Management Class
