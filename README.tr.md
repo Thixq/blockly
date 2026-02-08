@@ -67,6 +67,9 @@ lib/
 │   ├── init/
 │   │   ├── dependency_container.dart  # GetIt DI konfigürasyonu
 │   │   └── dependency_instances.dart  # DI erişim facade'ı
+│    ├── json_parser/
+│   │   ├── json_stream_parser.dart         # REST response isolate parser
+│   │   └── websocket_isolate_parser.dart   # WebSocket isolate parser
 │   ├── managers/
 │   │   ├── market_manager.dart        # REST + WebSocket veri orkestratörü
 │   │   └── market_state.dart          # Immutable state nesnesi (Equatable)
@@ -74,9 +77,6 @@ lib/
 │   │   ├── coin_ticker.dart           # 24h ticker modeli (21 alan)
 │   │   └── mini_ticker.dart           # WebSocket mini ticker modeli
 │   └── services/
-│       ├── json_parser/
-│       │   ├── json_stream_parser.dart         # REST response isolate parser
-│       │   └── websocket_isolate_parser.dart   # WebSocket isolate parser
 │       ├── network/
 │       │   ├── dio_config.dart         # Dio instance konfigürasyonu
 │       │   └── dio_service.dart        # HTTP istemci (streaming destekli)
