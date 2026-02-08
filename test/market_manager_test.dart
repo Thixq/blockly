@@ -62,7 +62,6 @@ void main() {
     when(
       mockSocketService.connect(any, useIsolate: anyNamed('useIsolate')),
     ).thenAnswer((_) async {});
-    when(mockSocketService.setParser(any)).thenReturn(null);
     when(mockSocketService.dispose()).thenReturn(null);
 
     manager = MarketManager(

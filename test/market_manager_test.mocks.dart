@@ -7,8 +7,6 @@ import 'dart:async' as _i4;
 
 import 'package:blockly/feature/enums/socket_status_enum.dart' as _i7;
 import 'package:blockly/feature/models/mini_ticker.dart' as _i6;
-import 'package:blockly/feature/services/json_parser/websocket_isolate_parser.dart'
-    as _i8;
 import 'package:blockly/feature/services/network/dio_service.dart' as _i3;
 import 'package:blockly/feature/services/web_socket/web_socket_service.dart'
     as _i5;
@@ -139,12 +137,6 @@ class MockTickerWebSocketService extends _i1.Mock
   );
 
   @override
-  void setParser(_i8.Parser<_i6.MiniTicker>? parser) => super.noSuchMethod(
-    Invocation.method(#setParser, [parser]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
   _i4.Future<void> connect(String? url, {bool? useIsolate = false}) =>
       (super.noSuchMethod(
             Invocation.method(#connect, [url], {#useIsolate: useIsolate}),
@@ -173,4 +165,13 @@ class MockTickerWebSocketService extends _i1.Mock
     Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  _i4.Future<void> manualRetry() =>
+      (super.noSuchMethod(
+            Invocation.method(#manualRetry, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 }

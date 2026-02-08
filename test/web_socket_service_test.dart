@@ -41,8 +41,7 @@ void main() {
     late WebSocketService<dynamic> webSocketService;
 
     setUp(() {
-      webSocketService = WebSocketService<dynamic>()
-        ..setParser((json) => json)
+      webSocketService = WebSocketService<dynamic>(parser: (json) => json)
         ..channelFactory = (uri) => mockChannel;
     });
 
@@ -123,9 +122,9 @@ void main() {
     late WebSocketService<dynamic> webSocketService;
 
     setUp(() {
-      webSocketService = WebSocketService<dynamic>()
-        ..setParser((json) => json)
-        ..channelFactory = (uri) => mockChannel;
+      webSocketService = WebSocketService<dynamic>(
+        parser: (json) => json,
+      )..channelFactory = (uri) => mockChannel;
     });
 
     test('High Volume Message Processing (Stress Test)', () async {
@@ -188,9 +187,9 @@ void main() {
 
   group('Generics Support', () {
     test('Should parse into Type T', () async {
-      final typedService = WebSocketService<TestModel>()
-        ..setParser(TestModel.fromJson)
-        ..channelFactory = (uri) => mockChannel;
+      final typedService = WebSocketService<TestModel>(
+        parser: TestModel.fromJson,
+      )..channelFactory = (uri) => mockChannel;
 
       await typedService.connect('wss://typed.com');
 
