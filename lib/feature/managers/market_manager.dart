@@ -89,7 +89,10 @@ class MarketManager {
     );
 
     unawaited(
-      _socketService.connect(Env.binancePriceSocketUrl + UrlConst.miniTicker),
+      _socketService.connect(
+        Env.binancePriceSocketUrl + UrlConst.miniTicker,
+        useIsolate: true, // Enable background parsing for heavy potential load
+      ),
     );
   }
 
