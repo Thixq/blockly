@@ -68,7 +68,7 @@ class _SmartCoinRowState extends State<SmartCoinRow> {
             },
             title: Text(ticker.symbol ?? ''),
             subtitle: Text(
-              ' ${double.tryParse(ticker.priceChangePercent ?? '0')?.toStringAsFixed(2) ?? '0.00'}%',
+              '${double.tryParse(ticker.priceChangePercent ?? '0')?.toStringAsFixed(2) ?? '0.00'}%',
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

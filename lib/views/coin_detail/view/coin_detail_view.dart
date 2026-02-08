@@ -7,8 +7,9 @@ import 'package:blockly/views/coin_detail/widgets/price_section.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// [CoinDetailBody] is the main view for displaying detailed information about a specific coin.
-/// It uses a [CoinDetailViewModel] to manage the state and data for the coin details, and displays various pieces of information such as price, volume, and price changes in a structured
+/// [CoinDetailView] is the main view for displaying detailed information about a specific coin.
+/// It uses a [CoinDetailViewModel] to manage the state and data for the coin details,
+/// and displays various pieces of information such as price, volume, and price changes.
 class CoinDetailView extends StatelessWidget {
   /// Constructor with required symbol parameter
   const CoinDetailView({required this.symbol, super.key});

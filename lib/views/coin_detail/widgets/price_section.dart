@@ -1,3 +1,4 @@
+import 'package:blockly/core/extensions/context_extension.dart';
 import 'package:blockly/views/coin_detail/view_model/coin_detail_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +25,7 @@ class PriceSection extends StatelessWidget {
           children: [
             Text(
               lastPrice,
-              style: Theme.of(context).textTheme.displayMedium?.copyWith(
+              style: context.textTheme.displayMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: color,
               ),

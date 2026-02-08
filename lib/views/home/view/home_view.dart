@@ -34,9 +34,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    _viewModel
-      ..removeListener(_onStateChanged)
-      ..dispose();
+    _viewModel.removeListener(_onStateChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -102,7 +100,7 @@ class _HomeViewState extends State<HomeView> {
         builder: (context, state, child) {
           switch (state) {
             case HomeViewState.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator.adaptive());
             case HomeViewState.error:
               return Center(
                 child: Column(

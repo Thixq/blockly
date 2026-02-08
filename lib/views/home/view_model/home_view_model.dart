@@ -59,7 +59,7 @@ class HomeViewModel extends ChangeNotifier {
 
   void _applyFilter() {
     if (_searchText.isEmpty) {
-      _displayList = List.from(_allTickers);
+      _displayList = _allTickers;
     } else {
       _displayList = _allTickers
           .where(
@@ -75,8 +75,11 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     await _subscription?.cancel();
-    _subscription = _manager.marketStream.distinct().listen((state) {
-      _tickerMap = {for (final t in state.allTickers) t.symbol!: t};
+    _subscription = _manager.marketStream.listen((state) {
+      _tickerMap = {
+        for (final t in state.allTickers)
+          if (t.symbol != null) t.symbol!: t,
+      };
       _allTickers = state.allTickers;
 
       if (_state == HomeViewState.loading) {
